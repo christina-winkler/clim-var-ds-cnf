@@ -170,7 +170,7 @@ class NormFlowNet(nn.Module):
                         h_shaped = torch.zeros(self.output_shapes[i]).to(self.device)
 
                         # squeeze each time-frame seperately
-                        if self.L > 1:
+                        if i > 0:
                             for s in range(self.lag_len):
                                 h_shaped[:,:,s,:,:] = layer(h[:,:,s,:,:], reverse=False)
                                 z_shaped[:,:,0,:,:] = layer(z[:,:,0,:,:], reverse=False)
@@ -208,9 +208,12 @@ class NormFlowNet(nn.Module):
                 # bsz = 1 if self.testmode else bsz
                 h_temp = torch.zeros((bsz,c,t,height,w)).to(self.device).cuda()
 
-                for l in range(self.lag_len):
-                    h_temp[:,:,l,:,:] = self.extra_squeezer(h[:,:,l,:,:])
-                h = h_temp.clone()
+                if i > 0:
+                    for l in range(self.lag_len):
+                        h_temp[:,:,l,:,:] = self.extra_squeezer(h[:,:,l,:,:])
+                    h = h_temp.clone()
+                else:
+                    h = h.repeat(1,4,1,1,1)
 
             for i in reversed(range(self.L)):
                 for layer in reversed(self.level_modules[i]):

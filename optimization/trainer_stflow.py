@@ -116,92 +116,74 @@ def trainer(args, train_loader, valid_loader, model,
 
                     model.eval()
 
-                    # testing reconstruction - should be exact same as x_for
-                    # pdb.set_trace()
-                    reconstructions, _ = model.forward(z=z.cuda(), x_past=x_past.cuda(), state=state,
-                                      use_stored=True, reverse=True)
+                    # testing reconstruction error
+                    reconstructions, _ = model.forward(z=z.cuda(), x_past=x.cuda(), state=state,
+                                                       use_stored=True, reverse=True)
 
-                    squared_recon_error = (reconstructions-x_for).mean()**2
-                    print("Reconstruction Error:", (reconstructions-x_for).mean())
-                    # wandb.log({"Squared Reconstruction Error" : squared_recon_error})
-
+                    squared_recon_error = (reconstructions-y).mean()**2
+                    print("Reconstruction Error:", (reconstructions-y).mean())
                     grid_reconstructions = torchvision.utils.make_grid(reconstructions[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
-                    array_imgs_np = np.array(grid_reconstructions.permute(2,1,0)[:,:,0].contiguous().unsqueeze(2))
-                    cmap_recon = np.apply_along_axis(cm.inferno, 2, array_imgs_np)
-                    reconstructions = wandb.Image(cmap_recon, caption="Training Reconstruction")
-                    # wandb.log({"Reconstructions (train) {}".format(step) : reconstructions})
-
                     plt.figure()
                     plt.imshow(grid_reconstructions.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
                     plt.axis('off')
                     plt.savefig(viz_dir + '/reconstructed_frame_t_{}.png'.format(step), dpi=300)
                     # plt.show()
+                    plt.close()
 
-                    # visualize past frames the prediction is based on (context)
-                    grid_past = torchvision.utils.make_grid(x_past[0:9, -1, :, :].cpu(), nrow=3)
-                    array_imgs_past = np.array(grid_past.permute(2,1,0)[:,:,0].contiguous().unsqueeze(2))
-                    cmap_past = np.apply_along_axis(cm.inferno, 2, array_imgs_past)
-                    past_imgs = wandb.Image(cmap_past, caption="Frame at t-1")
-                    # wandb.log({"Context Frame at t-1 (train) {}".format(step) : past_imgs})
-
+                    # Visualize low resolution GT
+                    grid_low_res = torchvision.utils.make_grid(x[0:9, -1, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_past.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
                     plt.axis('off')
-                    plt.title("Context Frame at t-1 (train)")
-                    plt.savefig(viz_dir + '/frame_at_t-1_{}.png'.format(step), dpi=300)
-                    #
-                    # # visualize future frame of the correct prediction
-                    grid_future = torchvision.utils.make_grid(x_for[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
-                    array_imgs_future = np.array(grid_future.permute(2,1,0)[:,:,0].unsqueeze(2))
-                    cmap_future = np.apply_along_axis(cm.inferno, 2, array_imgs_future)
-                    future_imgs = wandb.Image(cmap_future, caption="Frame at t")
-                    # wandb.log({"Frame at t (train) {}".format(step) : future_imgs})
+                    plt.title("Low-Res GT (train)")
+                    # plt.show()
+                    plt.savefig(viz_dir + '/low_res_gt{}.png'.format(step), dpi=300)
+                    plt.close()
 
+                    # Visualize High-Res GT
+                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_future.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
                     plt.axis('off')
-                    plt.title("Ground Truth at t")
-                    plt.savefig(viz_dir + '/frame_at_t_{}.png'.format(step), dpi=300)
+                    plt.title("High-Res GT")
+                    # plt.show()
+                    plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(step), dpi=300)
+                    plt.close()
 
-                     # predicting a new sample based on context window
-                    print("Predicting ...")
-                    predictions, _ = model._predict(x_past.cuda(), state) # TODO: sample longer trajectories
-                    grid_pred = torchvision.utils.make_grid(predictions[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
-                    array_imgs_pred = np.array(grid_pred.permute(2,1,0)[:,:,0].unsqueeze(2))
-                    cmap_pred = np.apply_along_axis(cm.inferno, 2, array_imgs_pred)
-                    future_pred = wandb.Image(cmap_pred, caption="Frame at t")
-                    # wandb.log({"Predicted frame at t (train) {}".format(step) : future_pred})
-
-                    # visualize predictions
-                    grid_samples = torchvision.utils.make_grid(predictions[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
+                     # Super-Resolving low-res
+                    y_hat, _ = model._predict(x.cuda(), state=None)
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_samples.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
                     plt.axis('off')
-                    plt.title("Prediction at t")
-                    plt.savefig(viz_dir + '/samples_{}.png'.format(step), dpi=300)
+                    plt.title("Y hat")
+                    plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300)
+                    # plt.show()
+                    plt.close()
 
-
-            if step % args.val_interval == 0:
-                print('Validating model ... ')
-                nll_valid = validate(model_without_dataparallel,
-                                     valid_loader,
-                                     args.experiment_dir,
-                                     "{}".format(step),
-                                     args)
-
-                writer.add_scalar("nll_valid",
-                                  nll_valid.mean().item(),
-                                  logging_step)
-
-                # save checkpoint only when nll lower than previous model
-                if nll_valid < prev_nll_epoch:
-                    PATH = args.experiment_dir + '/model_checkpoints/'
-                    os.makedirs(PATH, exist_ok=True)
-                    torch.save({'epoch': epoch,
-                                'model_state_dict': model.state_dict(),
-                                'optimizer_state_dict': optimizer.state_dict(),
-                                'loss': nll_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
-                    prev_nll_epoch = nll_valid
+            # if step % args.val_interval == 0:
+            #     print('Validating model ... ')
+            #     # nll_valid = validate(model_without_dataparallel,
+            #     #                      valid_loader,
+            #     #                      args.experiment_dir,
+            #     #                      "{}".format(step),
+            #     #                      args)
+            #
+            #     nll_valid = [-3000000000000, -99999999999999]
+            #
+            #     writer.add_scalar("nll_valid",
+            #                       nll_valid.mean().item(),
+            #                       logging_step)
+            #
+            #     # save checkpoint only when nll lower than previous model
+            #     if nll_valid < prev_nll_epoch:
+            #         PATH = args.experiment_dir + '/model_checkpoints/'
+            #         os.makedirs(PATH, exist_ok=True)
+            #         torch.save({'epoch': epoch,
+            #                     'model_state_dict': model.state_dict(),
+            #                     'optimizer_state_dict': optimizer.state_dict(),
+            #                     'loss': nll_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
+            #         prev_nll_epoch = nll_valid
 
             logging_step += 1
 

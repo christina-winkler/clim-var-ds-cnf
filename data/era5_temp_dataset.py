@@ -87,7 +87,7 @@ class ERA5T2MData(Dataset):
         if self.transform is None:
             self.transform_x = transforms.Compose([transforms.ToTensor(), # XRToTensor(),
                                                  MinMaxScaler(values_range=(0, 1))])
-            self.transform_y = transforms.Compose([XRToTensor(),
+            self.transform_y = transforms.Compose([transforms.ToTensor(), #XRToTensor(),
                                                  MinMaxScaler(values_range=(0, 1))])
 
     def __len__(self):
@@ -96,12 +96,13 @@ class ERA5T2MData(Dataset):
     def __getitem__(self, idx):
 
         y = self.data[idx]
+
         time = np.array(y.coords['time'])
         latitude = np.array(y.coords['latitude'])
         longitude = np.array(y.coords['longitude'])
 
-        x = resize(y, (y.shape[0]//2, y.shape[1]//2), anti_aliasing=True)
-
+        x = resize(y, (y.shape[0]//4, y.shape[1]//4), anti_aliasing=True)
+        y = resize(y, (y.shape[0]//2, y.shape[1]//2), anti_aliasing=True)
         return self.transform_y(y), self.transform_x(x), str(time), latitude, longitude
 
 # datashape = ERA5T2MData('/home/christina/Documents/research/auto-encoding-normalizing-flows/code/data/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr')[0][0].shape
