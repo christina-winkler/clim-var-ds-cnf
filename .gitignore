@@ -1,0 +1,9 @@
+data/assets/
+data/__pycache__
+experiments/__pycache__
+experiments/runs/
+models/architectures/__pycache__
+models/transformations/__pycache__
+utils/__pycache__
+optimization/__pycache__
+runs/
