@@ -70,8 +70,8 @@ def trainer(args, train_loader, valid_loader, model,
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 
-            y = item[0].to(device).unsqueeze(1)
-            x = item[1].to(device).unsqueeze(1)
+            y = item[0].to(device)
+            x = item[1].to(device)
 
             model.train()
             optimizer.zero_grad()
@@ -84,7 +84,7 @@ def trainer(args, train_loader, valid_loader, model,
                                             xlr=x[:bsz_p_gpu],
                                             logdet=0)
 
-            z, state, nll = model.forward(x=y, x_past=x, state=state)
+            z, nll = model.forward(x_hr=y, xlr=x)
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
@@ -114,24 +114,10 @@ def trainer(args, train_loader, valid_loader, model,
 
                     model.eval()
 
-                    # testing reconstruction error
-                    reconstructions, _ = model.forward(z=z.cuda(), x_past=x.cuda(), state=state,
-                                                       use_stored=True, reverse=True)
-
-                    squared_recon_error = (reconstructions-y).mean()**2
-                    print("Reconstruction Error:", (reconstructions-y).mean())
-                    grid_reconstructions = torchvision.utils.make_grid(reconstructions[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
-                    plt.figure()
-                    plt.imshow(grid_reconstructions.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
-                    plt.axis('off')
-                    plt.savefig(viz_dir + '/reconstructed_frame_t_{}.png'.format(step), dpi=300)
-                    # plt.show()
-                    plt.close()
-
                     # Visualize low resolution GT
-                    grid_low_res = torchvision.utils.make_grid(x[0:9, -1, :, :].cpu(), nrow=3)
+                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap='inferno')
                     plt.axis('off')
                     plt.title("Low-Res GT (train)")
                     # plt.show()
@@ -139,9 +125,9 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                     # Visualize High-Res GT
-                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
+                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap='inferno')
                     plt.axis('off')
                     plt.title("High-Res GT")
                     # plt.show()
@@ -149,10 +135,10 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                      # Super-Resolving low-res
-                    y_hat, _ = model._predict(x.cuda(), state=None)
-                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
+                    y_hat, logdet, logpz = model(xlr=x, reverse=True)
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap='inferno')
                     plt.axis('off')
                     plt.title("Y hat")
                     plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300)

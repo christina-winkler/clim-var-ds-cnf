@@ -3,7 +3,7 @@ import torch.nn as nn
 import numpy as np
 import random
 
-from models.transformations import modules
+from models.transformations import modules_st as modules
 from models.architectures.conv_lstm import ConvLSTMCell
 from models.transformations.dequantization import *
 
