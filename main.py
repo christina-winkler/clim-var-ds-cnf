@@ -151,8 +151,8 @@ if __name__ == "__main__":
                         help="learning rate")
     parser.add_argument("--filter_size", type=int, default=512//2,
                         help="filter size NN in Affine Coupling Layer")
-    parser.add_argument("--L", type=int, default=1, help="# of levels")
-    parser.add_argument("--K", type=int, default=4,
+    parser.add_argument("--L", type=int, default=3, help="# of levels")
+    parser.add_argument("--K", type=int, default=2,
                         help="# of flow steps, i.e. model depth")
     parser.add_argument("--nb", type=int, default=16,
                         help="# of residual-in-residual blocks LR network.")

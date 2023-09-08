@@ -15,7 +15,7 @@ import torchvision
 from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 from models.architectures.conv_lstm import *
-from optimization.validation_stflow import validate
+from optimization.validation_srflow import validate
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
@@ -121,7 +121,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.axis('off')
                     plt.title("Low-Res GT (train)")
                     # plt.show()
-                    plt.savefig(viz_dir + '/low_res_gt{}.png'.format(step), dpi=300)
+                    plt.savefig(viz_dir + '/low_res_gt{}.png'.format(step), dpi=300, bbox_inches='tight')
                     plt.close()
 
                     # Visualize High-Res GT
@@ -131,7 +131,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.axis('off')
                     plt.title("High-Res GT")
                     # plt.show()
-                    plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(step), dpi=300)
+                    plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(step), dpi=300, bbox_inches='tight')
                     plt.close()
 
                      # Super-Resolving low-res
@@ -141,33 +141,42 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap='inferno')
                     plt.axis('off')
                     plt.title("Y hat")
-                    plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300)
+                    plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300,bbox_inches='tight')
                     # plt.show()
                     plt.close()
 
-            # if step % args.val_interval == 0:
-            #     print('Validating model ... ')
-            #     # nll_valid = validate(model_without_dataparallel,
-            #     #                      valid_loader,
-            #     #                      args.experiment_dir,
-            #     #                      "{}".format(step),
-            #     #                      args)
-            #
-            #     nll_valid = [-3000000000000, -99999999999999]
-            #
-            #     writer.add_scalar("nll_valid",
-            #                       nll_valid.mean().item(),
-            #                       logging_step)
-            #
-            #     # save checkpoint only when nll lower than previous model
-            #     if nll_valid < prev_nll_epoch:
-            #         PATH = args.experiment_dir + '/model_checkpoints/'
-            #         os.makedirs(PATH, exist_ok=True)
-            #         torch.save({'epoch': epoch,
-            #                     'model_state_dict': model.state_dict(),
-            #                     'optimizer_state_dict': optimizer.state_dict(),
-            #                     'loss': nll_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
-            #         prev_nll_epoch = nll_valid
+                    abs_err = torch.abs(y_hat - y)
+                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+                    plt.figure()
+                    plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
+                    plt.axis('off')
+                    plt.title("Abs Err")
+                    plt.savefig(viz_dir + '/abs_err_{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    # plt.show()
+                    plt.close()
+
+
+            if step % args.val_interval == 0:
+                print('Validating model ... ')
+                nll_valid = validate(model_without_dataparallel,
+                                     valid_loader,
+                                     args.experiment_dir,
+                                     "{}".format(step),
+                                     args)
+
+                writer.add_scalar("nll_valid",
+                                  nll_valid.mean().item(),
+                                  logging_step)
+
+                # save checkpoint only when nll lower than previous model
+                if nll_valid < prev_nll_epoch:
+                    PATH = args.experiment_dir + '/model_checkpoints/'
+                    os.makedirs(PATH, exist_ok=True)
+                    torch.save({'epoch': epoch,
+                                'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),
+                                'loss': nll_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
+                    prev_nll_epoch = nll_valid
 
             logging_step += 1
 
