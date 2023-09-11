@@ -151,6 +151,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     ssim08 = [0] * args.bsz
     ssim1 = [0] * args.bsz
 
+    psnr0 = [0] * args.bsz
+    psnr05 = [0] * args.bsz
+    psnr08 = [0] * args.bsz
+    psnr1 = [0] * args.bsz
+
     mse0 = [0] * args.bsz
     mse05 = [0] * args.bsz
     mse08 = [0] * args.bsz
@@ -214,6 +219,19 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             current_ssim_mu1 = metrics.ssim(mu1, y)
             ssim1= list(map(add, current_ssim_mu1, ssim1))
+
+            # PSNR
+            current_psnr_mu0 = metrics.ssim(mu0, y)
+            psnr0 = list(map(add, current_psnr_mu0, psnr0))
+
+            current_psnr_mu05 = metrics.ssim(mu05, y)
+            psnr05 = list(map(add, current_psnr_mu05, psnr05))
+
+            current_psnr_mu08 = metrics.ssim(mu08, y)
+            psnr08 = list(map(add, current_psnr_mu08, psnr08))
+
+            current_psnr_mu1 = metrics.ssim(mu1, y)
+            psnr1 = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
             current_mse0 = metrics.MSE(mu0, y)
@@ -330,6 +348,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08))
     avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
 
+    avrg_psnrs0 = list(map(lambda x: x/len(test_loader), psnr0))
+    avrg_psnr05 = list(map(lambda x: x/len(test_loader), psnr05))
+    avrg_psnr08 = list(map(lambda x: x/len(test_loader), psnr08))
+    avrg_psnr1 = list(map(lambda x: x/len(test_loader), psnr1))
+
     avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
     avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
     avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
@@ -359,6 +382,18 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         f.write("%f \n" %np.mean(avrg_ssim08))
 
         f.write('Avrg SSIM mu1:\n')
+        f.write("%f \n" %np.mean(avrg_ssim1))
+
+        f.write('Avrg PSNR mu0:\n')
+        f.write("%f \n" % np.mean(avrg_ssim0))
+
+        f.write('Avrg PSNR mu05:\n')
+        f.write("%f \n" %np.mean(avrg_ssim05))
+
+        f.write('Avrg PSNR mu08:\n')
+        f.write("%f \n" %np.mean(avrg_ssim08))
+
+        f.write('Avrg PSNR mu1:\n')
         f.write("%f \n" %np.mean(avrg_ssim1))
 
         f.write('Avrg MSE mu0:\n')
