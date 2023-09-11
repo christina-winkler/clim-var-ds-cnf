@@ -107,10 +107,10 @@ def trainer(args, train_loader, valid_loader, model,
 
                 with torch.no_grad():
 
-                    if hasattr(model, "module"):
-                        model_without_dataparallel = model.module
-                    else:
-                        model_without_dataparallel = model
+                    # if hasattr(model, "module"):
+                    #     model_without_dataparallel = model.module
+                    # else:
+                    #     model_without_dataparallel = model
 
                     model.eval()
 
@@ -158,7 +158,7 @@ def trainer(args, train_loader, valid_loader, model,
 
             if step % args.val_interval == 0:
                 print('Validating model ... ')
-                nll_valid = validate(model_without_dataparallel,
+                nll_valid = validate(model,
                                      valid_loader,
                                      args.experiment_dir,
                                      "{}".format(step),
@@ -184,15 +184,15 @@ def trainer(args, train_loader, valid_loader, model,
                 break
 
         if step == args.max_steps:
-            print("Done Training for {} mini-batch update steps!".format(args.max_steps)
-            )
+        #     print("Done Training for {} mini-batch update steps!".format(args.max_steps)
+        #     )
+        #
+        #     if hasattr(model, "module"):
+        #         model_without_dataparallel = model.module
+        #     else:
+        #         model_without_dataparallel = model
 
-            if hasattr(model, "module"):
-                model_without_dataparallel = model.module
-            else:
-                model_without_dataparallel = model
-
-            utils.save_model(model_without_dataparallel,
+            utils.save_model(model,
                              epoch, optimizer, args, time=True)
 
             print("Saved trained model :)")

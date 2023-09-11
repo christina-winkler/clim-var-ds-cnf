@@ -1,4 +1,5 @@
 data/assets/
+data/era5_sr_data/*
 data/__pycache__
 experiments/__pycache__
 experiments/runs/
