@@ -25,7 +25,7 @@ class ActNorm(nn.Module):
     def __init__(self, num_features, logscale_factor=1.0, scale=1.0, testmode=False):
         super(ActNorm, self).__init__()
 
-        self.initialized = True if testmode else False
+        self.initialized = False if testmode else True
         self.logscale_factor = logscale_factor
         self.scale = scale
         self.register_parameter("b", nn.Parameter(torch.zeros(1, num_features, 1)))

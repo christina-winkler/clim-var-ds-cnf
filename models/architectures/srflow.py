@@ -38,11 +38,11 @@ class LrNet(nn.Module):
 
 class FlowStep(nn.Module):
     def __init__(self, level, s, channel_dim, input_shape, filter_size,
-                 cond_channels, noscale, noscaletest):
+                 cond_channels, noscale, noscaletest, testmode):
 
         super().__init__()
         # 1. Activation Normalization
-        self.actnorm = modules.ActNorm(channel_dim)
+        self.actnorm = modules.ActNorm(channel_dim, testmode=testmode)
         # 2. Invertible 1x1 Convolution
         self.invconv = modules.Invert1x1Conv(channel_dim)
         # 3. Conditional Coupling layer
@@ -75,13 +75,14 @@ class FlowStep(nn.Module):
 
 class NormFlowNet(nn.Module):
     def __init__(self, input_shape, filter_size, bsz, s,
-                 L, K, nb, cond_channels, noscale, noscaletest):
+                 L, K, nb, cond_channels, noscale, noscaletest, testmode):
 
         super().__init__()
         self.L = L
         self.K = K
         self.bsz = bsz
         C, H, W = input_shape
+        self.testmode = testmode
         self.output_shapes = []
         self.layers = nn.ModuleList()
         self.lrNet = LrNet(in_c=1, cond_channels=cond_channels, s=s,
@@ -108,7 +109,7 @@ class NormFlowNet(nn.Module):
             for k in range(K):
                 self.level_modules[i].append(
                     FlowStep(i, s, C, input_shape, filter_size, cond_channels,
-                             noscale, noscaletest))
+                             noscale, noscaletest, testmode))
 
             if i < L - 1:
                 # 3.Split Prior for intermediate latent variables
@@ -166,13 +167,13 @@ class NormFlowNet(nn.Module):
 class SRFlow(nn.Module):
     def __init__(self, input_shape, filter_size, L, K, bsz, s,
                  nb, cond_channels=128, n_bits_x=8, noscale=False,
-                 noscaletest=False):
+                 noscaletest=False, testmode=False):
 
         super().__init__()
 
         self.flow = NormFlowNet(input_shape=input_shape, filter_size=filter_size,
                                 s=s, bsz=bsz, K=K, L=L, nb=nb, cond_channels=cond_channels,
-                                noscale=noscale, noscaletest=noscaletest)
+                                noscale=noscale, noscaletest=noscaletest, testmode=testmode)
 
         self._variational_dequantizer = None
         self.nbins = 2 ** n_bits_x
