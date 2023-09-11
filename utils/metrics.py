@@ -47,8 +47,8 @@ def psnr(im1, im2):
     # Compute psnr over samples in mini-batch
     # pdb.set_trace()
     for i in range(im1.shape[0]):
-        # psnr.append(calculate_psnr(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
-        psnr.append(calculate_psnr(im1[i, :, :, :], im2[i, :, :, :]))
+        psnr.append(calculate_psnr(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
+        # psnr.append(calculate_psnr(im1[i, :, :, :], im2[i, :, :, :]))
     return psnr
 
 def RMSE(yhat,y):
@@ -61,6 +61,12 @@ def MSE(y_hat, y):
     _,_,h,w=y.shape
     diff = (y_hat - y)
     sum = (diff**2).sum(dim=[1,2,3])
+    return sum/(h*w)
+
+def MAE(y_hat, y):
+    _,_,h,w=y.shape
+    abs_diff = torch.abs(y_hat-y)
+    sum = abs_diff.sum(dim=[1,2,3])
     return sum/(h*w)
 
 def nrmse(im1, im2):

@@ -268,21 +268,12 @@ class Net(nn.Module):
 
 
 class ConditionalCoupling(nn.Module):
-    def __init__(
-        self,
-        level,
-        s,
-        in_channels,
-        input_shape,
-        cond_channels,
-        filter_size,
-        noscale,
-        noscaletest,
-    ):
+    def __init__(self, level, s, in_channels, input_shape, cond_channels,
+                 filter_size, noscale, noscaletest):
+
         super().__init__()
-        self.Net = Net(
-            level, s, in_channels, input_shape, cond_channels, noscale, filter_size
-        )
+        self.Net = Net(level, s, in_channels, input_shape, cond_channels,
+                       noscale, filter_size)
         self.noscale = noscale
         self.noscaletest = noscaletest
 

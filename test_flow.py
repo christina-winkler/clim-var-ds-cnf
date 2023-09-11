@@ -161,6 +161,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     mse08 = [0] * args.bsz
     mse1 = [0] * args.bsz
 
+    mae0 = [0] * args.bsz
+    mae05 = [0] * args.bsz
+    mae08 = [0] * args.bsz
+    mae1 = [0] * args.bsz
+
     rmse0 = [0] * args.bsz
     rmse05 = [0] * args.bsz
     rmse08 = [0] * args.bsz
@@ -221,16 +226,16 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             ssim1= list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            current_psnr_mu0 = metrics.ssim(mu0, y)
+            current_psnr_mu0 = metrics.psnr(mu0, y)
             psnr0 = list(map(add, current_psnr_mu0, psnr0))
 
-            current_psnr_mu05 = metrics.ssim(mu05, y)
+            current_psnr_mu05 = metrics.psnr(mu05, y)
             psnr05 = list(map(add, current_psnr_mu05, psnr05))
 
-            current_psnr_mu08 = metrics.ssim(mu08, y)
+            current_psnr_mu08 = metrics.psnr(mu08, y)
             psnr08 = list(map(add, current_psnr_mu08, psnr08))
 
-            current_psnr_mu1 = metrics.ssim(mu1, y)
+            current_psnr_mu1 = metrics.psnr(mu1, y)
             psnr1 = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
@@ -245,6 +250,19 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             current_mse1 = metrics.MSE(mu1, y)
             mse1 = list(map(add, current_mse1.cpu().numpy(), mse1))
+
+            # MAE
+            current_mae0 = metrics.MAE(mu0, y)
+            mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
+
+            current_mae05 = metrics.MAE(mu05, y)
+            mae05 = list(map(add, current_mae05.cpu().numpy(), mae05))
+
+            current_mae08 = metrics.MAE(mu08, y)
+            mae08 = list(map(add, current_mae08.cpu().numpy(), mae08))
+
+            current_mae1 = metrics.MAE(mu1, y)
+            mae1 = list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
             current_rmse0 = metrics.RMSE(mu0, y)
@@ -264,13 +282,13 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             current_mmd0 = metrics.MMD(mu0, y)
             mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
 
-            current_mmd05 = metrics.RMSE(mu05, y)
+            current_mmd05 = metrics.MMD(mu05, y)
             mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
 
-            current_mmd08 = metrics.RMSE(mu08, y)
+            current_mmd08 = metrics.MMD(mu08, y)
             mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
 
-            current_mmd1 = metrics.RMSE(mu1, y)
+            current_mmd1 = metrics.MMD(mu1, y)
             mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
 
@@ -280,7 +298,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap='inferno')
             plt.axis('off')
-            plt.title("Low-Res GT (train)")
+            # plt.title("Low-Res GT (train)")
             # plt.show()
             plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
@@ -290,7 +308,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap='inferno')
             plt.axis('off')
-            plt.title("High-Res GT")
+            # plt.title("High-Res GT")
             # plt.show()
             plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
@@ -299,7 +317,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
-            plt.title("Prediction at t (test), mu=0")
+            # plt.title("Prediction at t (test), mu=0")
             plt.savefig(savedir_viz + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
@@ -307,7 +325,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
-            plt.title("Prediction at t (test), mu=0.5")
+            # plt.title("Prediction at t (test), mu=0.5")
             plt.savefig(savedir_viz + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -315,7 +333,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
-            plt.title("Prediction at t (test), mu=0.8")
+            # plt.title("Prediction at t (test), mu=0.8")
             plt.savefig(savedir_viz + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
@@ -323,7 +341,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
-            plt.title("Prediction at t (test), mu=1.0")
+            # plt.title("Prediction at t (test), mu=1.0")
             plt.savefig(savedir_viz + "mu_1_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -332,7 +350,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.figure()
             plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
             plt.axis('off')
-            plt.title("Abs Err")
+            # plt.title("Abs Err")
             plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -348,7 +366,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08))
     avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
 
-    avrg_psnrs0 = list(map(lambda x: x/len(test_loader), psnr0))
+    avrg_psnr0 = list(map(lambda x: x/len(test_loader), psnr0))
     avrg_psnr05 = list(map(lambda x: x/len(test_loader), psnr05))
     avrg_psnr08 = list(map(lambda x: x/len(test_loader), psnr08))
     avrg_psnr1 = list(map(lambda x: x/len(test_loader), psnr1))
@@ -357,6 +375,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
     avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
     avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
+
+    avrg_mae0 = list(map(lambda x: x/len(test_loader), mae0))
+    avrg_mae05 = list(map(lambda x: x/len(test_loader), mae05))
+    avrg_mae08 = list(map(lambda x: x/len(test_loader), mae08))
+    avrg_mae1 = list(map(lambda x: x/len(test_loader), mae1))
 
     avrg_rmse0 = list(map(lambda x: x/len(test_loader), mse0))
     avrg_rmse05 = list(map(lambda x: x/len(test_loader), mse05))
@@ -386,16 +409,16 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
 
         f.write('Avrg PSNR mu0:\n')
-        f.write("%f \n" % np.mean(avrg_ssim0))
+        f.write("%f \n" % np.mean(avrg_psnr0))
 
         f.write('Avrg PSNR mu05:\n')
-        f.write("%f \n" %np.mean(avrg_ssim05))
+        f.write("%f \n" %np.mean(avrg_psnr05))
 
         f.write('Avrg PSNR mu08:\n')
-        f.write("%f \n" %np.mean(avrg_ssim08))
+        f.write("%f \n" %np.mean(avrg_psnr08))
 
         f.write('Avrg PSNR mu1:\n')
-        f.write("%f \n" %np.mean(avrg_ssim1))
+        f.write("%f \n" %np.mean(avrg_psnr1))
 
 
         f.write('Avrg MSE mu0:\n')
@@ -409,6 +432,19 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
         f.write('Avrg MSE mu1:\n')
         f.write("%f \n" %np.mean(avrg_mse1))
+
+
+        f.write('Avrg MAE mu0:\n')
+        f.write("%f \n" %np.mean(avrg_mae0))
+
+        f.write('Avrg MAE mu05:\n')
+        f.write("%f \n" %np.mean(avrg_mae05))
+
+        f.write('Avrg MAE mu08:\n')
+        f.write("%f \n" %np.mean(avrg_mae08))
+
+        f.write('Avrg MAE mu1:\n')
+        f.write("%f \n" %np.mean(avrg_mae1))
 
 
         f.write('Avrg RMSE mu0:\n')
