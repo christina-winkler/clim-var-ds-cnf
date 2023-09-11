@@ -154,7 +154,9 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     emd = [0] * args.bsz
     rmse = [0] * args.bsz
     mse0 = [0] * args.bsz
-
+    mse05 = [0] * args.bsz
+    mse08 = [0] * args.bsz
+    mse1 = [0] * args.bsz
     color = 'inferno' if args.trainset == 'era5' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
     savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
@@ -204,9 +206,16 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             # MSE
             current_mse0 = metrics.MSE(mu0, y)
-            print(current_mse0)
             mse0 = list(map(add, current_mse0, mse0))
-            print(mse0)
+
+            current_mse05 = metrics.MSE(mu05, y)
+            mse05 = list(map(add, current_mse05, mse05))
+
+            current_mse08 = metrics.MSE(mu08, y)
+            mse08 = list(map(add, current_mse08, mse08))
+
+            current_mse1 = metrics.MSE(mu1, y)
+            mse1 = list(map(add, current_mse1, mse1))
 
             print('Visualize results ...')
             # Visualize low resolution GT
@@ -282,22 +291,43 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08))
     avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
 
+    avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
+    avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
+    avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
+    avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
+
     # Write metric results to a file in case to recreate plots
     with open(savedir_txt + 'metric_results.txt','w') as f:
-        f.write('Avrg SSIM mu0 over forecasting period:\n')
+        f.write('Avrg SSIM mu0:\n')
         for item in avrg_ssim0:
             f.write("%f \n" % item)
 
-        f.write('Avrg SSIM mu05 over forecasting period:\n')
+        f.write('Avrg SSIM mu05:\n')
         for item in avrg_ssim05:
             f.write("%f \n" % item)
 
-        f.write('Avrg SSIM mu08 over forecasting period:\n')
+        f.write('Avrg SSIM mu08:\n')
         for item in avrg_ssim08:
             f.write("%f \n" % item)
 
-        f.write('Avrg SSIM mu1 over forecasting period:\n')
+        f.write('Avrg SSIM mu1:\n')
         for item in avrg_ssim1:
+            f.write("%f \n" % item)
+
+        f.write('Avrg MSE mu0:\n')
+        for item in avrg_mse0:
+            f.write("%f \n" % item)
+
+        f.write('Avrg MSE mu05:\n')
+        for item in avrg_mse05:
+            f.write("%f \n" % item)
+
+        f.write('Avrg MSE mu08:\n')
+        for item in avrg_mse08:
+            f.write("%f \n" % item)
+
+        f.write('Avrg MSE mu1:\n')
+        for item in avrg_mse1:
             f.write("%f \n" % item)
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
