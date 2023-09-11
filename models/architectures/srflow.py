@@ -13,6 +13,10 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+def inv_scaler(x):
+    max_value = 315.91873
+    min_value = 241.22385
+    return x * (max_value - min_value) + min_value
 
 class LrNet(nn.Module):
     def __init__(self, in_c, cond_channels, s, input_shape, nb, gc=32):
@@ -206,6 +210,7 @@ class SRFlow(nn.Module):
     def inverse_flow(self, z, xlr, eps, logdet=0, use_stored=False):
         y_hat, logdet, log_pz = self.flow.forward(z, logdet=logdet, xlr=xlr, eps=eps,
                               reverse=True, use_stored=use_stored)
+        y_hat = inv_scaler(y_hat)
         return y_hat, logdet, log_pz
 
     def _dequantize_uniform(self, x, n_bins):

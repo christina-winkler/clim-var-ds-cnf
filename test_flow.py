@@ -98,6 +98,11 @@ parser.add_argument("--testset", type=str, default="era5",
 
 args = parser.parse_args()
 
+def inv_scaler(x):
+    max_value = 315.91873
+    min_value = 241.22385
+    return x * (max_value - min_value) + min_value
+
 def create_rollout(model, init_pred, x_for, x_past, s, lead_time):
 
     predictions = []
@@ -148,11 +153,14 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     mmd = [0] * args.bsz
     emd = [0] * args.bsz
     rmse = [0] * args.bsz
-    mse = [0] * args.bsz
+    mse0 = [0] * args.bsz
 
     color = 'inferno' if args.trainset == 'era5' else 'viridis'
-    savedir = "experiments/{}_{}/snapshots/test_set_{}/".format(exp_name, modelname, args.trainset)
-    os.makedirs(savedir, exist_ok=True)
+    savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
+    savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
+
+    os.makedirs(savedir_viz, exist_ok=True)
+    os.makedirs(savedir_txt, exist_ok=True)
 
     model.eval()
     with torch.no_grad():
@@ -179,6 +187,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
+            y = inv_scaler(y)
+
             # SSIM
             current_ssim_mu0 = metrics.ssim(mu0, y)
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
@@ -192,6 +202,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             current_ssim_mu1 = metrics.ssim(mu1, y)
             ssim1= list(map(add, current_ssim_mu1, ssim1))
 
+            # MSE
+            current_mse0 = metrics.MSE(mu0, y)
+            print(current_mse0)
+            mse0 = list(map(add, current_mse0, mse0))
+            print(mse0)
 
             print('Visualize results ...')
             # Visualize low resolution GT
@@ -201,7 +216,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.axis('off')
             plt.title("Low-Res GT (train)")
             # plt.show()
-            plt.savefig(savedir + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
             # Visualize High-Res GT
@@ -211,7 +226,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.axis('off')
             plt.title("High-Res GT")
             # plt.show()
-            plt.savefig(savedir + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
             grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
@@ -219,7 +234,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
             plt.title("Prediction at t (test), mu=0")
-            plt.savefig(savedir + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300)
+            plt.savefig(savedir_viz + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
             grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
@@ -227,7 +242,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
             plt.title("Prediction at t (test), mu=0.5")
-            plt.savefig(savedir + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300)
+            plt.savefig(savedir_viz + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
             grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
@@ -235,7 +250,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
             plt.title("Prediction at t (test), mu=0.8")
-            plt.savefig(savedir + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300)
+            plt.savefig(savedir_viz + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
             grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
@@ -243,7 +258,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
             plt.axis('off')
             plt.title("Prediction at t (test), mu=1.0")
-            plt.savefig(savedir + "mu_1_logstep_{}_test.png".format(batch_idx), dpi=300)
+            plt.savefig(savedir_viz + "mu_1_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
             abs_err = torch.abs(mu08 - y)
@@ -252,13 +267,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
             plt.axis('off')
             plt.title("Abs Err")
-            plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
+            plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
-
-
             # write results to file:
-            with open('experiments/{}_{}/nll_runtimes.txt'.format(exp_name, modelname),'w') as f:
+            with open(savedir_txt + '/nll_runtimes.txt'.format(exp_name, modelname),'w') as f:
                 f.write('Avrg NLL: %d \n'% np.mean(nll_list))
                 f.write('Avrg fwd. runtime: %.2f \n'% np.mean(avrg_fwd_time))
                 f.write('Avrg bw runtime: %.2f'% np.mean(avrg_bw_time))
@@ -270,7 +283,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
 
     # Write metric results to a file in case to recreate plots
-    with open(savedir + 'metric_results.txt','w') as f:
+    with open(savedir_txt + 'metric_results.txt','w') as f:
         f.write('Avrg SSIM mu0 over forecasting period:\n')
         for item in avrg_ssim0:
             f.write("%f \n" % item)

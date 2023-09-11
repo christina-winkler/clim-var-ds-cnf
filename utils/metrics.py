@@ -31,7 +31,6 @@ def ssim(im1, im2):
         ssim.append(calculate_ssim(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
     return ssim
 
-
 def psnr(im1, im2):
     """
 
@@ -54,6 +53,12 @@ def psnr(im1, im2):
 
 def RMSE(yhat,y):
     return torch.sqrt(torch.mean((yhat-y)**2,dim=[1,2,3]))
+
+def MSE(y_hat, y):
+    _,_,h,w=y.shape
+    diff = (y_hat - y)
+    sum = (diff**2).sum(dim=[1,2,3])
+    return sum/(h*w)
 
 def nrmse(im1, im2):
     """
