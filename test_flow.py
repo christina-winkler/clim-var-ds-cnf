@@ -325,25 +325,25 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
                 f.write('Avrg bw runtime: %.2f'% np.mean(avrg_bw_time))
 
     # compute average metric values over test set
-    avrg_ssim0 = list(map(lambda x: x/len(test_loader), ssim0)).mean()
-    avrg_ssim05 = list(map(lambda x: x/len(test_loader), ssim05)).mean()
-    avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08)).mean()
-    avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1)).mean()
+    avrg_ssim0 = list(map(lambda x: x/len(test_loader), np.mean(ssim0)))
+    avrg_ssim05 = list(map(lambda x: x/len(test_loader), np.mean(ssim05)))
+    avrg_ssim08 = list(map(lambda x: x/len(test_loader), np.mean(ssim08)))
+    avrg_ssim1 = list(map(lambda x: x/len(test_loader), np.mean(ssim1)))
 
-    avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0)).mean()
-    avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05)).mean()
-    avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08)).mean()
-    avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1)).mean()
+    avrg_mse0 = list(map(lambda x: x/len(test_loader), np.mean(mse0)))
+    avrg_mse05 = list(map(lambda x: x/len(test_loader), np.mean(mse05)))
+    avrg_mse08 = list(map(lambda x: x/len(test_loader), np.mean(mse08)))
+    avrg_mse1 = list(map(lambda x: x/len(test_loader), np.mean(mse1)))
 
-    avrg_rmse0 = list(map(lambda x: x/len(test_loader), mse0)).mean()
-    avrg_rmse05 = list(map(lambda x: x/len(test_loader), mse05)).mean()
-    avrg_rmse08 = list(map(lambda x: x/len(test_loader), mse08)).mean()
-    avrg_rmse1 = list(map(lambda x: x/len(test_loader), mse1)).mean()
+    avrg_rmse0 = list(map(lambda x: x/len(test_loader), np.mean(mse0)))
+    avrg_rmse05 = list(map(lambda x: x/len(test_loader), np.mean(mse05)))
+    avrg_rmse08 = list(map(lambda x: x/len(test_loader), np.mean(mse08)))
+    avrg_rmse1 = list(map(lambda x: x/len(test_loader), np.mean(mse1)))
 
-    avrg_mmd0 = list(map(lambda x: x/len(test_loader), mmd0)).mean()
-    avrg_mmd05 = list(map(lambda x: x/len(test_loader), mmd05)).mean()
-    avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08)).mean()
-    avrg_mmd1 = list(map(lambda x: x/len(test_loader), mmd1)).mean()
+    avrg_mmd0 = list(map(lambda x: x/len(test_loader), np.mean(mmd0)))
+    avrg_mmd05 = list(map(lambda x: x/len(test_loader), np.mean(mmd05)))
+    avrg_mmd08 = list(map(lambda x: x/len(test_loader), np.mean(mmd08)))
+    avrg_mmd1 = list(map(lambda x: x/len(test_loader), np.mean(mmd1)))
 
     # Write metric results to a file in case to recreate plots
     with open(savedir_txt + 'metric_results.txt','w') as f:
