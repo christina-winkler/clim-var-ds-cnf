@@ -150,13 +150,26 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     ssim05 = [0] * args.bsz
     ssim08 = [0] * args.bsz
     ssim1 = [0] * args.bsz
-    mmd = [0] * args.bsz
-    emd = [0] * args.bsz
-    rmse = [0] * args.bsz
+
     mse0 = [0] * args.bsz
     mse05 = [0] * args.bsz
     mse08 = [0] * args.bsz
     mse1 = [0] * args.bsz
+
+    rmse0 = [0] * args.bsz
+    rmse05 = [0] * args.bsz
+    rmse08 = [0] * args.bsz
+    rmse1 = [0] * args.bsz
+
+    mmd0 = [0] * args.bsz
+    mmd0 = [0] * args.bsz
+    mmd05 = [0] * args.bsz
+    mmd08 = [0] * args.bsz
+    mmd1 = [0] * args.bsz
+
+    emd = [0] * args.bsz
+    rmse = [0] * args.bsz
+
     color = 'inferno' if args.trainset == 'era5' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
     savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
@@ -189,8 +202,6 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
-            y = inv_scaler(y)
-
             # SSIM
             current_ssim_mu0 = metrics.ssim(mu0, y)
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
@@ -216,6 +227,34 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             current_mse1 = metrics.MSE(mu1, y)
             mse1 = list(map(add, current_mse1, mse1))
+
+            # RMSE
+            current_rmse0 = metrics.RMSE(mu0, y)
+            rmse0 = list(map(add, current_rmse0, mse0))
+
+            current_rmse05 = metrics.RMSE(mu05, y)
+            rmse05 = list(map(add, current_rmse05, mse05))
+
+            current_rmse08 = metrics.RMSE(mu08, y)
+            rmse08 = list(map(add, current_rmse08, mse08))
+
+            current_rmse1 = metrics.RMSE(mu1, y)
+            rmse1 = list(map(add, current_rmse1, mse1))
+
+
+            # MMD
+            current_mmd0 = metrics.MMD(mu0, y)
+            mmd0 = list(map(add, current_mmd0, mmd0))
+
+            current_mmd05 = metrics.RMSE(mu05, y)
+            mmd05 = list(map(add, current_mmd05, mmd05))
+
+            current_mmd08 = metrics.RMSE(mu08, y)
+            mmd08 = list(map(add, current_mmd08, mmd08))
+
+            current_mmd1 = metrics.RMSE(mu1, y)
+            mmd1 = list(map(add, current_mmd1, mse1))
+
 
             print('Visualize results ...')
             # Visualize low resolution GT
@@ -286,15 +325,25 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
                 f.write('Avrg bw runtime: %.2f'% np.mean(avrg_bw_time))
 
     # compute average metric values over test set
-    avrg_ssim0 = list(map(lambda x: x/len(test_loader), ssim0))
-    avrg_ssim05 = list(map(lambda x: x/len(test_loader), ssim05))
-    avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08))
-    avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
+    avrg_ssim0 = list(map(lambda x: x/len(test_loader), ssim0)).mean()
+    avrg_ssim05 = list(map(lambda x: x/len(test_loader), ssim05)).mean()
+    avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08)).mean()
+    avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1)).mean()
 
-    avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
-    avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
-    avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
-    avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
+    avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0)).mean()
+    avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05)).mean()
+    avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08)).mean()
+    avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1)).mean()
+
+    avrg_rmse0 = list(map(lambda x: x/len(test_loader), mse0)).mean()
+    avrg_rmse05 = list(map(lambda x: x/len(test_loader), mse05)).mean()
+    avrg_rmse08 = list(map(lambda x: x/len(test_loader), mse08)).mean()
+    avrg_rmse1 = list(map(lambda x: x/len(test_loader), mse1)).mean()
+
+    avrg_mmd0 = list(map(lambda x: x/len(test_loader), mmd0)).mean()
+    avrg_mmd05 = list(map(lambda x: x/len(test_loader), mmd05)).mean()
+    avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08)).mean()
+    avrg_mmd1 = list(map(lambda x: x/len(test_loader), mmd1)).mean()
 
     # Write metric results to a file in case to recreate plots
     with open(savedir_txt + 'metric_results.txt','w') as f:
@@ -328,6 +377,22 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
         f.write('Avrg MSE mu1:\n')
         for item in avrg_mse1:
+            f.write("%f \n" % item)
+
+        f.write('Avrg RMSE mu0:\n')
+        for item in avrg_rmse0:
+            f.write("%f \n" % item)
+
+        f.write('Avrg RMSE mu05:\n')
+        for item in avrg_rmse05:
+            f.write("%f \n" % item)
+
+        f.write('Avrg RMSE mu08:\n')
+        for item in avrg_rmse08:
+            f.write("%f \n" % item)
+
+        f.write('Avrg RMSE mu1:\n')
+        for item in avrg_rmse1:
             f.write("%f \n" % item)
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))

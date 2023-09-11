@@ -210,7 +210,6 @@ class SRFlow(nn.Module):
     def inverse_flow(self, z, xlr, eps, logdet=0, use_stored=False):
         y_hat, logdet, log_pz = self.flow.forward(z, logdet=logdet, xlr=xlr, eps=eps,
                               reverse=True, use_stored=use_stored)
-        y_hat = inv_scaler(y_hat)
         return y_hat, logdet, log_pz
 
     def _dequantize_uniform(self, x, n_bins):
