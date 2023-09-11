@@ -1,1 +1,3 @@
 # Climate Variable Downscaling with Conditional Normalizing Flows
+
+Predictions of global climate models typically operate on coarse spatial scales, such that information of physical processes such as heavy rainfall over short spatial scales is being omitted. However, in order to assess potential impacts of regional climate events, there is a need for techniques to obtain predictions at finer resolutions. Meteorologists commonly use a technique known as climate variable downscaling. Climate variable downscaling refers to the process of inferring high-resolution information from coarser resolution data. This is the same as super-resolution in the computer vision context. In this work, we apply conditional normalizing flows for the task of climate variable downscaling.
