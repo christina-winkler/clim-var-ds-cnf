@@ -62,7 +62,7 @@ def main(args):
     if args.train:
         # load data
         train_loader, valid_loader, test_loader, args = dataloading.load_data(args)
-        in_channels = 1 # next(iter(train_loader))[0].shape[2]
+        in_channels = next(iter(test_loader))[0].shape[1]
         args.height, args.width = next(iter(train_loader))[0].shape[2], next(iter(train_loader))[0].shape[3]
 
     print("Start training {} on {}:".format(args.modeltype, args.trainset))
@@ -141,12 +141,6 @@ if __name__ == "__main__":
     parser.add_argument("--patch_size", type=int, default=500,
                         help="Training patch size.")
     parser.add_argument("--bsz", type=int, default=16, help="batch size")
-    parser.add_argument("--seq_len", type=int, default=2,
-                        help="Total sequnece length needed from dataloader")
-    parser.add_argument("--lag_len", type=int, default=1,
-                        help="Lag length of time-series")
-    parser.add_argument("--lead_len", type=int, default=1,
-                        help="Lead time length of time-series")
     parser.add_argument("--lr", type=float, default=0.0002,
                         help="learning rate")
     parser.add_argument("--filter_size", type=int, default=512//2,

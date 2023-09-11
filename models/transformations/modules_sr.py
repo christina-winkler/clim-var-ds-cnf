@@ -22,9 +22,10 @@ class ActNorm(nn.Module):
     from: https://github.com/pclucas14/pytorch-glow/blob/master/invertible_layers.py
     """
 
-    def __init__(self, num_features, logscale_factor=1.0, scale=1.0):
+    def __init__(self, num_features, logscale_factor=1.0, scale=1.0, testmode=False):
         super(ActNorm, self).__init__()
-        self.initialized = False
+
+        self.initialized = True if testmode else False
         self.logscale_factor = logscale_factor
         self.scale = scale
         self.register_parameter("b", nn.Parameter(torch.zeros(1, num_features, 1)))
@@ -63,7 +64,7 @@ class ActNorm(nn.Module):
             return output.view(input_shape), logdet + dlogdet
 
         elif reverse == True:
-            # assert self.initialized
+            assert self.initialized
             input_shape = input.size()
             input = input.view(input_shape[0], input_shape[1], -1)
             logs = self.logs * self.logscale_factor
@@ -236,7 +237,7 @@ class conv2d_zeros(nn.Conv2d):
 class Net(nn.Module):
     def __init__(self, level, s, in_channels, input_shape, cond_channels,
                  noscale, noscaletest, intermediate_size=512):
-                 
+
         super().__init__()
 
         self.squeezer = Squeeze()

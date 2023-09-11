@@ -32,7 +32,7 @@ def load_era5(args):
 
     dpath = '/home/christina/Documents/multi-scale-stochastic-ds/data/assets/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr'
 
-    dataset = ERA5T2MData(data_path=dpath, window_size=args.lag_len)
+    dataset = ERA5T2MData(data_path=dpath)
 
     n_train_samples = int(len(dataset) // (1/0.7))
     n_val_samples = int(len(dataset) // (1/0.2))
