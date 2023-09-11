@@ -384,6 +384,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         f.write('Avrg SSIM mu1:\n')
         f.write("%f \n" %np.mean(avrg_ssim1))
 
+
         f.write('Avrg PSNR mu0:\n')
         f.write("%f \n" % np.mean(avrg_ssim0))
 
@@ -395,6 +396,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
         f.write('Avrg PSNR mu1:\n')
         f.write("%f \n" %np.mean(avrg_ssim1))
+
 
         f.write('Avrg MSE mu0:\n')
         f.write("%f \n" %np.mean(avrg_mse0))
@@ -408,6 +410,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         f.write('Avrg MSE mu1:\n')
         f.write("%f \n" %np.mean(avrg_mse1))
 
+
         f.write('Avrg RMSE mu0:\n')
         f.write("%f \n" %np.mean(avrg_rmse0))
 
@@ -419,6 +422,20 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
         f.write('Avrg RMSE mu1:\n')
         f.write("%f \n" %np.mean(avrg_rmse1))
+
+
+        f.write('Avrg MMD mu0:\n')
+        f.write("%f \n" %np.mean(avrg_mmd0))
+
+        f.write('Avrg MMD mu05:\n')
+        f.write("%f \n" %np.mean(avrg_mmd05))
+
+        f.write('Avrg MMD mu08:\n')
+        f.write("%f \n" %np.mean(avrg_mmd08))
+
+        f.write('Avrg MMD mu1:\n')
+        f.write("%f \n" %np.mean(avrg_mmd1))
+
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
     print("Average Fwd. runtime", np.mean(avrg_fwd_time))
