@@ -196,10 +196,10 @@ class SRFlow(nn.Module):
         z, logdet, logp_z = self.flow.forward(z=z, xlr=x_lr, logdet=logdet)
 
         # Loss: Z'ks under Gaussian + sum_logdet
-        # D = float(np.log(2) * np.prod(x_hr.size()[1:]))
-        # x_bpd = -(logdet + logp_z) / D
+        D = float(np.log(2) * np.prod(x_hr.size()[1:]))
+        x_bpd = -(logdet + logp_z) / D
         x_nll = -(logdet + logp_z)
-        # loss = x_bpd + 0.001 * l2_scale
+
         return z, x_nll
 
     def inverse_flow(self, z, xlr, eps, logdet=0, use_stored=False):

@@ -91,9 +91,9 @@ parser.add_argument("--condch", type=int, default=128//8,
 # data
 parser.add_argument("--datadir", type=str, default="data",
                     help="Dataset to train the model on.")
-parser.add_argument("--trainset", type=str, default="era5",
+parser.add_argument("--trainset", type=str, default="era5-T2M",
                     help="Dataset to train the model on.")
-parser.add_argument("--testset", type=str, default="era5",
+parser.add_argument("--testset", type=str, default="era5-T2M",
                     help="Specify test dataset")
 
 args = parser.parse_args()
@@ -204,6 +204,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             nll_list.append(nll.mean().detach().cpu().numpy())
 
             # evalutae for different temperatures
+            import pdb; pdb.set_trace()            
             mu0, _, _ = model(xlr=x, reverse=True, eps=0)
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
             mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)

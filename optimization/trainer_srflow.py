@@ -87,6 +87,7 @@ def trainer(args, train_loader, valid_loader, model,
                                             logdet=0)
 
             z, nll = model.forward(x_hr=y, xlr=x)
+
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 

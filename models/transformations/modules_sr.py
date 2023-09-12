@@ -336,7 +336,7 @@ class GaussianPrior(nn.Module):
         return mean, sigma
 
     def forward(self, x, lr_feat_map, eps, reverse, logpz=0, logdet=0,
-                use_stored=False):
+                use_stored=False, prob_map=None):
 
         if not reverse:
             if not self.final:
@@ -355,6 +355,7 @@ class GaussianPrior(nn.Module):
                 mean, sigma = self.split2d_prior(x, lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
                 z2 = prior.sample()
+                logpz -= prior.log_prob(z2).sum(dim=[1,2,3])
                 z = torch.cat((x, z2), 1)
 
             else:
@@ -364,6 +365,7 @@ class GaussianPrior(nn.Module):
                 mean, sigma = self.final_prior(lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
                 z = prior.sample()
+                logpz -= prior.log_prob(z).sum(dim=[1,2,3])
 
         return z, logdet, logpz
 
