@@ -70,8 +70,8 @@ def trainer(args, train_loader, valid_loader, model,
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 
-            y = item[0].to(device)
-            x = item[1].to(device)
+            y = item[0].to(device).squeeze(1)
+            x = item[1].to(device).squeeze(1) # TODO: remove squeeze
 
             model.train()
             optimizer.zero_grad()

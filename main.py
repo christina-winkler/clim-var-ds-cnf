@@ -156,7 +156,7 @@ if __name__ == "__main__":
     # data
     parser.add_argument("--datadir", type=str, default="data",
                         help="Dataset to train the model on.")
-    parser.add_argument("--trainset", type=str, default="era5",
+    parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")
 
     args = parser.parse_args()

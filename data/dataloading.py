@@ -3,6 +3,7 @@ from os import listdir
 import torch.utils.data as data_utils
 from torch.utils.data import Dataset
 from torchvision import transforms, datasets
+from torch.utils.data import DataLoader, TensorDataset
 import torch.nn.functional as F
 from PIL import Image
 import numpy as np
@@ -15,6 +16,7 @@ import os
 import xarray as xr
 
 from data.era5_temp_dataset import ERA5T2MData
+from data.era5_watercontent_dset import ERA5WTCData
 
 random.seed(0)
 torch.manual_seed(0)
@@ -26,9 +28,26 @@ torch.backends.cudnn.benchmark = False
 import os
 sys.path.append("../")
 
-def load_era5(args):
+def load_era5_TCW(args):
 
-    print("Loading ERA5 ...")
+    print("Loading ERA5 TCW ...")
+
+    train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train')
+    val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val')
+    test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test')
+
+    train_loader = data_utils.DataLoader(train_data, args.bsz, shuffle=True,
+                                         drop_last=True)
+    val_loader = data_utils.DataLoader(val_data, args.bsz, shuffle=True,
+                                       drop_last=True)
+    test_loader = data_utils.DataLoader(test_data, args.bsz, shuffle=False,
+                                        drop_last=True)
+
+    return train_loader, val_loader, test_loader, args
+
+def load_era5_T2M(args):
+
+    print("Loading ERA5 T2M ...")
 
     dpath = '/home/christina/Documents/multi-scale-stochastic-ds/data/assets/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr'
 
@@ -55,11 +74,13 @@ def load_era5(args):
 
     return train_loader, val_loader, test_loader, args
 
-
 def load_data(args):
 
-    if args.trainset == "era5":
-        return load_era5(args)
+    if args.trainset == "era5-T2M":
+        return load_era5_T2M(args)
+
+    elif args.trainset == "era5-TCW":
+        return load_era5_TCW(args)
 
     else:
         raise ValueError("Dataset not available. Check for typos!")

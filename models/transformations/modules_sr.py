@@ -248,9 +248,8 @@ class Net(nn.Module):
         d = 2 if noscale else 1
 
         self.Net = nn.Sequential(
-            nn.Conv2d(
-                in_channels // 2 + self.cond_channels, intermediate_size, 3, padding=1
-            ),
+            nn.Conv2d(in_channels // 2 + self.cond_channels, intermediate_size, 3,
+                    padding=1),
             nn.ReLU(),
             nn.Conv2d(intermediate_size, intermediate_size, kernel_size=1),
             nn.ReLU(),

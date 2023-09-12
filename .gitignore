@@ -1,5 +1,5 @@
 data/assets/
-data/era5_sr_data/*
+data/era5_tcw/*
 data/__pycache__
 experiments/__pycache__
 experiments/runs/
