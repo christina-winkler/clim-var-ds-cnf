@@ -52,6 +52,5 @@ class ERA5WTCData(Dataset):
         return len(self.inputs)
 
     def __getitem__(self, idx):
-        import pdb; pdb.set_trace()
         x,y = self.inputs[idx], self.targets[idx]
-        return self.transform(x), self.transform(y)
+        return self.transform(y).squeeze(1), self.transform(x).squeeze(1)

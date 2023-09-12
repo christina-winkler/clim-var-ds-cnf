@@ -33,6 +33,8 @@ torch.backends.cudnn.benchmark = False
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
 
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+
     config_dict = vars(args)
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
@@ -70,8 +72,8 @@ def trainer(args, train_loader, valid_loader, model,
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 
-            y = item[0].to(device).squeeze(1)
-            x = item[1].to(device).squeeze(1) # TODO: remove squeeze
+            y = item[0].to(device)
+            x = item[1].to(device)
 
             model.train()
             optimizer.zero_grad()
@@ -117,7 +119,7 @@ def trainer(args, train_loader, valid_loader, model,
                     # Visualize low resolution GT
                     grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap='inferno')
+                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Low-Res GT (train)")
                     # plt.show()
@@ -127,7 +129,7 @@ def trainer(args, train_loader, valid_loader, model,
                     # Visualize High-Res GT
                     grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap='inferno')
+                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("High-Res GT")
                     # plt.show()
@@ -138,7 +140,7 @@ def trainer(args, train_loader, valid_loader, model,
                     y_hat, logdet, logpz = model(xlr=x, reverse=True)
                     grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap='inferno')
+                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Y hat")
                     plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300,bbox_inches='tight')
@@ -148,7 +150,7 @@ def trainer(args, train_loader, valid_loader, model,
                     abs_err = torch.abs(y_hat - y)
                     grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
+                    plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Abs Err")
                     plt.savefig(viz_dir + '/abs_err_{}.png'.format(step), dpi=300,bbox_inches='tight')

@@ -13,10 +13,6 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-def inv_scaler(x):
-    max_value = 315.91873
-    min_value = 241.22385
-    return x * (max_value - min_value) + min_value
 
 class LrNet(nn.Module):
     def __init__(self, in_c, cond_channels, s, input_shape, nb, gc=32):
@@ -129,7 +125,6 @@ class NormFlowNet(nn.Module):
         lr_feat_map = self.lrNet(xlr)
         lr_downsampled_feats = [lr_feat_map]
         for i in range(self.L):
-
             lr_downsampled_feats.append(self.downsample_convs[i](lr_downsampled_feats[-1]))
 
         # Encode

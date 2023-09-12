@@ -23,6 +23,7 @@ def validate(model, val_loader, exp_name, logstep, args):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
 
     nll_list=[]
     model.eval()
@@ -54,7 +55,7 @@ def validate(model, val_loader, exp_name, logstep, args):
         # Visualize low resolution GT
         grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap='inferno')
+        plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
         plt.axis('off')
         plt.title("Low-Res GT (train)")
         # plt.show()
@@ -64,7 +65,7 @@ def validate(model, val_loader, exp_name, logstep, args):
         # Visualize High-Res GT
         grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap='inferno')
+        plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
         plt.axis('off')
         plt.title("High-Res GT")
         # plt.show()
@@ -73,7 +74,7 @@ def validate(model, val_loader, exp_name, logstep, args):
 
         grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
         plt.title("Prediction at t (valid), mu=0")
         plt.savefig(savedir + "mu_0_logstep_{}_valid.png".format(logstep), dpi=300)
@@ -81,7 +82,7 @@ def validate(model, val_loader, exp_name, logstep, args):
 
         grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
         plt.title("Prediction at t (valid), mu=0.5")
         plt.savefig(savedir + "mu_0.5_logstep_{}_valid.png".format(logstep), dpi=300)
@@ -89,7 +90,7 @@ def validate(model, val_loader, exp_name, logstep, args):
 
         grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
         plt.title("Prediction at t (valid), mu=0.8")
         plt.savefig(savedir + "mu_0.8_logstep_{}_valid.png".format(logstep), dpi=300)
@@ -97,7 +98,7 @@ def validate(model, val_loader, exp_name, logstep, args):
 
         grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
         plt.title("Prediction at t (valid), mu=1.0")
         plt.savefig(savedir + "mu_1_logstep_{}_valid.png".format(logstep), dpi=300)
@@ -106,7 +107,7 @@ def validate(model, val_loader, exp_name, logstep, args):
         abs_err = torch.abs(mu08 - y)
         grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
+        plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
         plt.axis('off')
         plt.title("Abs Err")
         plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
