@@ -113,7 +113,7 @@ if __name__ == "__main__":
                         help="number of epochs")
     parser.add_argument("--max_steps", type=int, default=2000000,
                         help="For training on a large dataset.")
-    parser.add_argument("--log_interval", type=int, default=100,
+    parser.add_argument("--log_interval", type=int, default=250,
                         help="Interval in which results should be logged.")
     parser.add_argument("--val_interval", type=int, default=250,
                         help="Interval in which model should be validated.")

@@ -34,6 +34,7 @@ class ERA5WTCData(Dataset):
     """
 
     data_path: str
+    testmode: False
 
     def __post_init__(self):
 
@@ -53,4 +54,8 @@ class ERA5WTCData(Dataset):
 
     def __getitem__(self, idx):
         x,y = self.inputs[idx], self.targets[idx]
-        return self.transform(y).squeeze(1), self.transform(x).squeeze(1)
+
+        if not self.testmode:
+            return self.transform(y).squeeze(1), self.transform(x).squeeze(1)
+        else:
+            return self.transform(y).squeeze(1), self.transform(x).squeeze(1), y,x

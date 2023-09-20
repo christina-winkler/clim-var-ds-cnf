@@ -366,6 +366,7 @@ class GaussianPrior(nn.Module):
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
                 z = prior.sample()
                 logpz -= prior.log_prob(z).sum(dim=[1,2,3])
+                # print("Test probs", torch.exp(logpz))
 
         return z, logdet, logpz
 

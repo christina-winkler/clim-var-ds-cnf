@@ -98,9 +98,14 @@ parser.add_argument("--testset", type=str, default="era5-T2M",
 
 args = parser.parse_args()
 
-def inv_scaler(x):
+def inv_scaler_temp(x):
     max_value = 315.91873
     min_value = 241.22385
+    return x * (max_value - min_value) + min_value
+
+def inv_scaler(x, ref=None):
+    min_value = ref.min()
+    max_value = ref.max()
     return x * (max_value - min_value) + min_value
 
 def create_rollout(model, init_pred, x_for, x_past, s, lead_time):
@@ -194,102 +199,108 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
+            y_unnorm = item[2]
+            z_unnorm = item[3]
+
             start = timeit.default_timer()
             z, nll = model.forward(x_hr=y, xlr=x)
             stop = timeit.default_timer()
             print("Time Fwd pass:", stop-start)
             avrg_fwd_time.append(stop-start)
 
+            print('Batch Idx', batch_idx)
+
             # Generative loss
             nll_list.append(nll.mean().detach().cpu().numpy())
 
             # evalutae for different temperatures
-            import pdb; pdb.set_trace()            
+            # import pdb; pdb.set_trace()
             mu0, _, _ = model(xlr=x, reverse=True, eps=0)
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
             mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)
             mu1, _, _ = model(xlr=x, reverse=True, eps=1.0)
 
+
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
             # SSIM
-            current_ssim_mu0 = metrics.ssim(mu0, y)
+            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y), y)
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
 
-            current_ssim_mu05 = metrics.ssim(mu05, y)
+            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y), y)
             ssim05 = list(map(add, current_ssim_mu05, ssim05))
 
-            current_ssim_mu08 = metrics.ssim(mu08, y)
+            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y), y)
             ssim08 = list(map(add, current_ssim_mu08, ssim08))
 
-            current_ssim_mu1 = metrics.ssim(mu1, y)
+            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y), y)
             ssim1= list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            current_psnr_mu0 = metrics.psnr(mu0, y)
+            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y), y)
             psnr0 = list(map(add, current_psnr_mu0, psnr0))
 
-            current_psnr_mu05 = metrics.psnr(mu05, y)
+            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y), y)
             psnr05 = list(map(add, current_psnr_mu05, psnr05))
 
-            current_psnr_mu08 = metrics.psnr(mu08, y)
+            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y), y)
             psnr08 = list(map(add, current_psnr_mu08, psnr08))
 
             current_psnr_mu1 = metrics.psnr(mu1, y)
             psnr1 = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            current_mse0 = metrics.MSE(mu0, y)
+            current_mse0 = metrics.MSE(inv_scaler(mu0,y), y)
             mse0 = list(map(add, current_mse0.cpu().numpy(), mse0))
 
-            current_mse05 = metrics.MSE(mu05, y)
+            current_mse05 = metrics.MSE(inv_scaler(mu05,y), y)
             mse05 = list(map(add, current_mse05.cpu().numpy(), mse05))
 
-            current_mse08 = metrics.MSE(mu08, y)
+            current_mse08 = metrics.MSE(inv_scaler(mu08,y), y)
             mse08 = list(map(add, current_mse08.cpu().numpy(), mse08))
 
-            current_mse1 = metrics.MSE(mu1, y)
+            current_mse1 = metrics.MSE(inv_scaler(mu1,y), y)
             mse1 = list(map(add, current_mse1.cpu().numpy(), mse1))
 
             # MAE
-            current_mae0 = metrics.MAE(mu0, y)
+            current_mae0 = metrics.MAE(inv_scaler(mu0,y), y)
             mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
 
-            current_mae05 = metrics.MAE(mu05, y)
+            current_mae05 = metrics.MAE(inv_scaler(mu05,y), y)
             mae05 = list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(mu08, y)
+            current_mae08 = metrics.MAE(inv_scaler(mu08,y), y)
             mae08 = list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(mu1, y)
+            current_mae1 = metrics.MAE(inv_scaler(mu1,y), y)
             mae1 = list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
-            current_rmse0 = metrics.RMSE(mu0, y)
+            current_rmse0 = metrics.RMSE(inv_scaler(mu0,y), y)
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
 
-            current_rmse05 = metrics.RMSE(mu05, y)
+            current_rmse05 = metrics.RMSE(inv_scaler(mu05,y), y)
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(mu08, y)
+            current_rmse08 = metrics.RMSE(inv_scaler(mu08,y), y)
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(mu1, y)
+            current_rmse1 = metrics.RMSE(inv_scaler(mu1,y), y)
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
 
             # MMD
-            current_mmd0 = metrics.MMD(mu0, y)
+            current_mmd0 = metrics.MMD(inv_scaler(mu0,y), y)
             mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
 
-            current_mmd05 = metrics.MMD(mu05, y)
+            current_mmd05 = metrics.MMD(inv_scaler(mu05,y), y)
             mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
 
-            current_mmd08 = metrics.MMD(mu08, y)
+            current_mmd08 = metrics.MMD(inv_scaler(mu08,y), y)
             mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
 
-            current_mmd1 = metrics.MMD(mu1, y)
+            current_mmd1 = metrics.MMD(inv_scaler(mu1,y), y)
             mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
 
@@ -297,7 +308,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visualize low resolution GT
             grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap='inferno')
+            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("Low-Res GT (train)")
             # plt.show()
@@ -307,7 +318,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visualize High-Res GT
             grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap='inferno')
+            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("High-Res GT")
             # plt.show()
@@ -316,7 +327,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0")
             plt.savefig(savedir_viz + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
@@ -324,7 +335,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0.5")
             plt.savefig(savedir_viz + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
@@ -332,7 +343,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+            plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0.8")
             plt.savefig(savedir_viz + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
@@ -340,7 +351,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+            plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=1.0")
             plt.savefig(savedir_viz + "mu_1_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
@@ -349,7 +360,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             abs_err = torch.abs(mu08 - y)
             grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='inferno')
+            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("Abs Err")
             plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
@@ -479,6 +490,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     print("Average Bw runtime:", np.mean(avrg_bw_time))
 
     return None
+
 
 def metrics_eval(args, model, test_loader, exp_name, modelname, logstep):
     """
@@ -749,16 +761,12 @@ if __name__ == "__main__":
     args.device = "cuda"
 
     # Load Model
-    # modelname = 'model_epoch_311_step_52000_era5'
-    # modelpath = os.getcwd() + '/experiments/flow-3-level-4-k/models/{}.tar'.format(modelname)
-    # modelname = 'model_epoch_340_step_56800_era5'
-    # modelpath = os.getcwd() + '/experiments/flow-1-level-8-k/models/{}.tar'.format(modelname)
-    # modelname = 'model_epoch_335_step_56000_era5'
-    # modelpath = os.getcwd() + '/experiments/flow-2-level-4-k/models/{}.tar'.format(modelname)
-    # modelname = 'model_epoch_16_step_11250_era5'
-    # modelpath = os.getcwd() + '/experiments/flow-3-level-3-k/models/{}.tar'.format(modelname)
+    # temperature
     modelname = 'model_epoch_35_step_23750'
     modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
+    # watercontent
+    # modelname = 'model_epoch_5_step_18250'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_14_15_37_30/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
