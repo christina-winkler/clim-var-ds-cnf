@@ -91,9 +91,9 @@ parser.add_argument("--condch", type=int, default=128//8,
 # data
 parser.add_argument("--datadir", type=str, default="data",
                     help="Dataset to train the model on.")
-parser.add_argument("--trainset", type=str, default="era5-T2M",
+parser.add_argument("--trainset", type=str, default="era5-TCW",
                     help="Dataset to train the model on.")
-parser.add_argument("--testset", type=str, default="era5-T2M",
+parser.add_argument("--testset", type=str, default="era5-TCW",
                     help="Specify test dataset")
 
 args = parser.parse_args()
@@ -762,11 +762,11 @@ if __name__ == "__main__":
 
     # Load Model
     # temperature
-    modelname = 'model_epoch_35_step_23750'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_35_step_23750'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
     # watercontent
-    # modelname = 'model_epoch_5_step_18250'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_14_15_37_30/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_5_step_18250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_14_15_37_30/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)

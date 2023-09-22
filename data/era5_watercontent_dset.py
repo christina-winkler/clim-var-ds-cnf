@@ -3,8 +3,9 @@ from torch.utils.data import Dataset
 from torchvision import transforms
 from dataclasses import dataclass
 from typing import Tuple, Callable
+from skimage.transform import resize
 import torch
-
+import numpy as np
 
 
 @dataclass
@@ -35,6 +36,7 @@ class ERA5WTCData(Dataset):
 
     data_path: str
     testmode: False
+    s: 4
 
     def __post_init__(self):
 
@@ -54,6 +56,10 @@ class ERA5WTCData(Dataset):
 
     def __getitem__(self, idx):
         x,y = self.inputs[idx], self.targets[idx]
+
+        if self.s ==2:
+            x = np.zeros((1,1,y.shape[2]//2,y.shape[2]//2))
+            x[0,0,...] = resize(y[0,0,...], (y.shape[2]//2, y.shape[3]//2), anti_aliasing=True)
 
         if not self.testmode:
             return self.transform(y).squeeze(1), self.transform(x).squeeze(1)

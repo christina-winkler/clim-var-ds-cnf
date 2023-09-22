@@ -32,9 +32,9 @@ def load_era5_TCW(args):
 
     print("Loading ERA5 TCW ...")
 
-    train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train', testmode=False)
-    val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val', testmode=False)
-    test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test', testmode=True)
+    train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train', s=args.s, testmode=False)
+    val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val', s=args.s, testmode=False)
+    test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test', s=args.s, testmode=True)
 
     train_loader = data_utils.DataLoader(train_data, args.bsz, shuffle=True,
                                          drop_last=True)
