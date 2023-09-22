@@ -60,6 +60,7 @@ class ERA5WTCData(Dataset):
         if self.s ==2:
             x = np.zeros((1,1,y.shape[2]//2,y.shape[2]//2))
             x[0,0,...] = resize(y[0,0,...], (y.shape[2]//2, y.shape[3]//2), anti_aliasing=True)
+            x = transforms.ToTensor(x)
 
         if not self.testmode:
             return self.transform(y).squeeze(1), self.transform(x).squeeze(1)
