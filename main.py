@@ -50,6 +50,7 @@ def main(args):
     else:
         args.device = "cpu"
 
+    # args.device = 'cpu'
     print("Device", args.device)
     # args.device = "cpu"
 
