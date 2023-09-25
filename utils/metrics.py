@@ -146,6 +146,25 @@ def euclidean_distances(x, y, squared=False):
     else:
         return distances.sqrt()
 
+def crps_ensemble(observation, forecasts):
+    # explanation: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003120
+    fc = forecasts.copy()
+    fc.sort(axis=0)
+    obs = observation
+    fc_below = fc<obs[None,...]
+    crps = np.zeros_like(obs)
+    for i in range(fc.shape[0]):
+        below = fc_below[i,...]
+        weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
+        crps[below] += weight * (obs[below]-fc[i,...][below])
+
+    for i in range(fc.shape[0]-1,-1,-1):
+        above  = ~fc_below[i,...]
+        k = fc.shape[0]-1-i
+        weight = ((k+1)**2 - k**2) / fc.shape[0]**2
+        crps[above] += weight * (fc[i,...][above]-obs[above])
+    return np.mean(crps)
+
 # def EMD(x, y):
 #     """Computes EMD / Wasserstein Distance"""
 #     emd = neuralnet_pytorch.metrics.emd_loss(x,y)

@@ -72,6 +72,11 @@ def main(args):
 
         model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                                args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+        if args.resume:
+            modelname = 'model_epoch_4_step_96500.tar'
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_22_17_08_51/model_checkpoints/{}".format(modelname)
+            ckpt = torch.load(modelpath)
+            model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_srflow.trainer(args=args, train_loader=train_loader,
                                valid_loader=valid_loader,
@@ -88,8 +93,8 @@ def main(args):
                                   args.noscale, args.noscaletest).to(args.device)
 
         if args.resume:
-            modelname = 'model_epoch_16_step_11250_era5.tar'
-            modelpath = os.getcwd() + "/experiments/flow-3-level-3-k/models/{}".format(modelname)
+            modelname = 'model_epoch_4_step_96500.tar'
+            modelpath = os.getcwd() + "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_22_17_08_51/model_checkpoints/{}".format(modelname)
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
