@@ -7,7 +7,7 @@ import os
 import torchvision
 from torchvision import transforms
 import matplotlib as mpl
-
+import pandas as pd
 import sys
 sys.path.append("../../")
 
@@ -29,6 +29,7 @@ from matplotlib import transforms
 import argparse
 import timeit
 import pdb
+import seaborn as sns
 
 from models.architectures import srflow
 from utils import metrics, wasserstein
@@ -187,6 +188,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
     crps0 = [0] * args.bsz
 
+    mae0_plot = []
+    ssim0_dens = []
+    psnr0_dens = []
+    rmse0_dens = []
+
     color = 'inferno' if args.trainset == 'era5' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
     savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
@@ -229,6 +235,10 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y_unnorm), y_unnorm)
             print('Current SSIM', current_ssim_mu0[0])
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
+            ssim0_dens.extend(current_ssim_mu0)
+            pd.Series(ssim0_dens).hist()
+            plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
+            plt.close()
 
             current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y_unnorm), y_unnorm)
             ssim05 = list(map(add, current_ssim_mu05, ssim05))
@@ -243,6 +253,10 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
             psnr0 = list(map(add, current_psnr_mu0, psnr0))
             print('Current PSNR', current_psnr_mu0[0])
+            psnr0_dens.extend(current_psnr_mu0)
+            pd.Series(psnr0_dens).hist()
+            plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
+            plt.close()
 
             current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y_unnorm), y_unnorm)
             psnr05 = list(map(add, current_psnr_mu05, psnr05))
@@ -273,6 +287,10 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             current_mae0 = metrics.MAE(mu0,y)
             mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
             print('Current MAE', current_mae0[0])
+            mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
+            pd.Series(mae0_plot).hist()
+            plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
+            plt.close()
 
             current_mae05 = metrics.MAE(mu05,y)
             mae05 = list(map(add, current_mae05.cpu().numpy(), mae05))
