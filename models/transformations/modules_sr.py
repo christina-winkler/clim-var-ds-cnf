@@ -342,18 +342,18 @@ class GaussianPrior(nn.Module):
             if not self.final:
                 z, y = torch.chunk(x, 2, 1)
                 mean, sigma = self.split2d_prior(z, lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.000000000000000001)
                 logpz += prior.log_prob(y).sum(dim=[1,2,3])
             else:
                 # final prior computation
                 mean, sigma = self.final_prior(lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.000000000000000001)
                 logpz += prior.log_prob(x).sum(dim=[1,2,3])
                 z = x
         else:
             if not self.final:
                 mean, sigma = self.split2d_prior(x, lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.000000000000000001)
                 z2 = prior.sample()
                 logpz -= prior.log_prob(z2).sum(dim=[1,2,3])
                 z = torch.cat((x, z2), 1)
@@ -363,7 +363,7 @@ class GaussianPrior(nn.Module):
                 self.bsz = lr_feat_map.size()[0]
                 _, c, h, w = self.flow_var_shape
                 mean, sigma = self.final_prior(lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.000000000000000001)
                 z = prior.sample()
                 logpz -= prior.log_prob(z).sum(dim=[1,2,3])
                 # print("Test probs", torch.exp(logpz))
