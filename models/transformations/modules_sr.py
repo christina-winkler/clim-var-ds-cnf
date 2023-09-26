@@ -335,25 +335,25 @@ class GaussianPrior(nn.Module):
         mean, sigma = h[:, 0::2], nn.functional.softplus(h[:, 1::2])
         return mean, sigma
 
-    def forward(self, x, lr_feat_map, eps, reverse, logpz=0, logdet=0,
+    def forward(self, x, lr_feat_map, eps=1.0, reverse=False, logpz=0, logdet=0,
                 use_stored=False, prob_map=None):
 
         if not reverse:
             if not self.final:
                 z, y = torch.chunk(x, 2, 1)
                 mean, sigma = self.split2d_prior(z, lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
                 logpz += prior.log_prob(y).sum(dim=[1,2,3])
             else:
                 # final prior computation
                 mean, sigma = self.final_prior(lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
                 logpz += prior.log_prob(x).sum(dim=[1,2,3])
                 z = x
         else:
             if not self.final:
                 mean, sigma = self.split2d_prior(x, lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
                 z2 = prior.sample()
                 logpz -= prior.log_prob(z2).sum(dim=[1,2,3])
                 z = torch.cat((x, z2), 1)
@@ -363,7 +363,7 @@ class GaussianPrior(nn.Module):
                 self.bsz = lr_feat_map.size()[0]
                 _, c, h, w = self.flow_var_shape
                 mean, sigma = self.final_prior(lr_feat_map)
-                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma)
+                prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps)
                 z = prior.sample()
                 logpz -= prior.log_prob(z).sum(dim=[1,2,3])
                 # print("Test probs", torch.exp(logpz))

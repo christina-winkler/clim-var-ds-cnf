@@ -28,7 +28,9 @@ def ssim(im1, im2):
 
     # Compute ssim over samples in mini-batch
     for i in range(im1.shape[0]):
-        ssim.append(calculate_ssim(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
+        # ssim.append(calculate_ssim(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
+        ssim.append(calculate_ssim(im1[i, :, :, :], im2[i, :, :, :]))
+        # print(ssim)
     return ssim
 
 def psnr(im1, im2):
@@ -47,8 +49,9 @@ def psnr(im1, im2):
     # Compute psnr over samples in mini-batch
     # pdb.set_trace()
     for i in range(im1.shape[0]):
-        psnr.append(calculate_psnr(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
-        # psnr.append(calculate_psnr(im1[i, :, :, :], im2[i, :, :, :]))
+        # psnr.append(calculate_psnr(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
+        psnr.append(calculate_psnr(im1[i, :, :, :], im2[i, :, :, :]))
+        # print(psnr)
     return psnr
 
 def RMSE(yhat,y):
@@ -65,9 +68,9 @@ def MSE(y_hat, y):
 
 def MAE(y_hat, y):
     _,_,h,w=y.shape
+    # import pdb; pdb.set_trace()
     abs_diff = torch.abs(y_hat-y)
-    sum = abs_diff.sum(dim=[1,2,3])
-    return sum/(h*w)
+    return abs_diff.sum(dim=[1,2,3])/(h*w)
 
 def nrmse(im1, im2):
     """
@@ -148,22 +151,30 @@ def euclidean_distances(x, y, squared=False):
 
 def crps_ensemble(observation, forecasts):
     # explanation: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003120
-    fc = forecasts.copy()
-    fc.sort(axis=0)
-    obs = observation
-    fc_below = fc<obs[None,...]
-    crps = np.zeros_like(obs)
-    for i in range(fc.shape[0]):
-        below = fc_below[i,...]
-        weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
-        crps[below] += weight * (obs[below]-fc[i,...][below])
+    # forceasts contains n predicted frames
+    _,_,h,w=observation.shape
+    observation = observation.detach().cpu().numpy()
+    forecasts = forecasts.detach().cpu().numpy()
 
-    for i in range(fc.shape[0]-1,-1,-1):
-        above  = ~fc_below[i,...]
-        k = fc.shape[0]-1-i
-        weight = ((k+1)**2 - k**2) / fc.shape[0]**2
-        crps[above] += weight * (fc[i,...][above]-obs[above])
-    return np.mean(crps)
+    fc = forecasts.copy()
+    fc.sort(axis=1)
+    obs = observation
+    fc_below = fc<obs[:,None,...]
+    crps = np.zeros_like(obs)
+    for i in range(fc.shape[1]):
+        below = fc_below[:,i,...]
+        weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
+        crps[below] += weight * (obs[below]-fc[:,i,...][below])
+
+    for i in range(fc.shape[1]-1,-1,-1):
+        above  = ~fc_below[:,i,...]
+        k = fc.shape[1]-1-i
+        weight = ((k+1)**2 - k**2) / fc.shape[1]**2
+        crps[above] += weight * (fc[:,i,...][above]-obs[above])
+    crps = np.sum(crps, axis=1)
+    crps = np.sum(crps, axis=1)
+    crps = np.sum(crps, axis=1)
+    return crps / (h*w) # np.mean(crps)
 
 # def EMD(x, y):
 #     """Computes EMD / Wasserstein Distance"""

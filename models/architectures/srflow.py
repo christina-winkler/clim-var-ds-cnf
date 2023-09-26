@@ -119,7 +119,7 @@ class NormFlowNet(nn.Module):
 
         self.level_modules[-1].append(modules.GaussianPrior(C, s, cond_channels, (bsz, C, H, W), final=True))
 
-    def forward(self, z, xlr=None, logdet=0, logpz=0, eps=None, reverse=False, use_stored=False):
+    def forward(self, z, xlr=None, logdet=0, logpz=0, eps=1.0, reverse=False, use_stored=False):
 
         # Pre-compute LR feature map
         lr_feat_map = self.lrNet(xlr)
@@ -177,32 +177,32 @@ class SRFlow(nn.Module):
         self._variational_dequantizer = None
         self.nbins = 2 ** n_bits_x
 
-    def forward(self, x_hr=None, xlr=None, z=None, logdet=0, eps=None, reverse=False,
+    def forward(self, x_hr=None, xlr=None, z=None, logdet=0, eps=1.0, reverse=False,
                 use_stored=False):
 
         if not reverse:
-            return self.normalizing_flow(x_hr, xlr)
+            return self.normalizing_flow(x_hr, xlr, eps=eps)
 
         else:
             return self.inverse_flow(z=z, xlr=xlr, logdet=logdet,
                                      eps=eps, use_stored=use_stored)
 
-    def normalizing_flow(self, x_hr, x_lr):
+    def normalizing_flow(self, x_hr, x_lr, eps):
 
         # Dequantize pixels: Discrete -> Continuous
         z, logdet = self._dequantize_uniform(x_hr, self.nbins)
 
         # Push z through flow
-        z, logdet, logp_z = self.flow.forward(z=z, xlr=x_lr, logdet=logdet)
+        z, logdet, logp_z = self.flow.forward(z=z, xlr=x_lr, eps=eps, logdet=logdet)
 
         # Loss: Z'ks under Gaussian + sum_logdet
         D = float(np.log(2) * np.prod(x_hr.size()[1:]))
-        x_bpd = -(logdet + logp_z) / D
+        # x_bpd = -(logdet + logp_z) / D
         x_nll = -(logdet + logp_z)
 
         return z, x_nll
 
-    def inverse_flow(self, z, xlr, eps, logdet=0, use_stored=False):
+    def inverse_flow(self, z, xlr, eps=1.0, logdet=0, use_stored=False):
         y_hat, logdet, log_pz = self.flow.forward(z, logdet=logdet, xlr=xlr, eps=eps,
                               reverse=True, use_stored=use_stored)
         return y_hat, logdet, log_pz
@@ -221,11 +221,12 @@ class SRFlow(nn.Module):
         logdet += float(-np.log(n_bins) * np.prod(x.size()[1:]))
         return x, logdet
 
-    def _sample(self, x, eps=None):
+    def _sample(self, x, eps=1.0):
         """
         Super-resolves a low-resolution image with estimated params.
         """
         # Draw samples from model
+        print('eps', eps)
         with torch.no_grad():
             samples = self.inverse_flow(z=None, xlr=x, eps=eps)[0]
-            return samples.clamp(min=0, max=float(self.nbins - 1) / float(self.nbins))
+            return samples #samples.clamp(min=0, max=float(self.nbins - 1) / float(self.nbins))

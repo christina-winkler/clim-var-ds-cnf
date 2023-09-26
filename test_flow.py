@@ -185,6 +185,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     emd = [0] * args.bsz
     rmse = [0] * args.bsz
 
+    crps0 = [0] * args.bsz
+
     color = 'inferno' if args.trainset == 'era5' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
     savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
@@ -199,8 +201,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2]
-            z_unnorm = item[3]
+            y_unnorm = item[2].squeeze(1).to(args.device)
+            x_unnorm = item[3].squeeze(1)
 
             start = timeit.default_timer()
             z, nll = model.forward(x_hr=y, xlr=x)
@@ -208,103 +210,122 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             print("Time Fwd pass:", stop-start)
             avrg_fwd_time.append(stop-start)
 
-            print('Batch Idx', batch_idx)
-
             # Generative loss
             nll_list.append(nll.mean().detach().cpu().numpy())
 
             # evalutae for different temperatures
             # import pdb; pdb.set_trace()
-            mu0, _, _ = model(xlr=x, reverse=True, eps=0)
+            mu0, _, _ = model(xlr=x, reverse=True, eps=0.2)
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
             mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)
             mu1, _, _ = model(xlr=x, reverse=True, eps=1.0)
 
-
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
+            # import pdb; pdb.set_trace()
+
             # SSIM
-            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y), y)
+            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y_unnorm), y_unnorm)
+            print('Current SSIM', current_ssim_mu0[0])
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
 
-            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y), y)
+            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y_unnorm), y_unnorm)
             ssim05 = list(map(add, current_ssim_mu05, ssim05))
 
-            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y), y)
+            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y_unnorm), y_unnorm)
             ssim08 = list(map(add, current_ssim_mu08, ssim08))
 
-            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y), y)
+            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y_unnorm), y_unnorm)
             ssim1= list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y), y)
+            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
             psnr0 = list(map(add, current_psnr_mu0, psnr0))
+            print('Current PSNR', current_psnr_mu0[0])
 
-            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y), y)
+            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y_unnorm), y_unnorm)
             psnr05 = list(map(add, current_psnr_mu05, psnr05))
 
-            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y), y)
+            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y_unnorm), y_unnorm)
             psnr08 = list(map(add, current_psnr_mu08, psnr08))
 
-            current_psnr_mu1 = metrics.psnr(mu1, y)
+            current_psnr_mu1 = metrics.psnr(mu1, y_unnorm)
             psnr1 = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            current_mse0 = metrics.MSE(inv_scaler(mu0,y), y)
+            # current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm)
+            current_mse0 = metrics.MSE(mu0, y)
             mse0 = list(map(add, current_mse0.cpu().numpy(), mse0))
+            print('Current MSE', current_psnr_mu0[0])
 
-            current_mse05 = metrics.MSE(inv_scaler(mu05,y), y)
+            current_mse05 = metrics.MSE(inv_scaler(mu05,y_unnorm), y_unnorm)
             mse05 = list(map(add, current_mse05.cpu().numpy(), mse05))
 
-            current_mse08 = metrics.MSE(inv_scaler(mu08,y), y)
+            current_mse08 = metrics.MSE(inv_scaler(mu08,y_unnorm), y_unnorm)
             mse08 = list(map(add, current_mse08.cpu().numpy(), mse08))
 
-            current_mse1 = metrics.MSE(inv_scaler(mu1,y), y)
+            current_mse1 = metrics.MSE(inv_scaler(mu1,y_unnorm),y_unnorm)
             mse1 = list(map(add, current_mse1.cpu().numpy(), mse1))
 
             # MAE
-            current_mae0 = metrics.MAE(inv_scaler(mu0,y), y)
+            # current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm)
+            current_mae0 = metrics.MAE(mu0,y)
             mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
+            print('Current MAE', current_mae0[0])
 
-            current_mae05 = metrics.MAE(inv_scaler(mu05,y), y)
+            current_mae05 = metrics.MAE(mu05,y)
             mae05 = list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(inv_scaler(mu08,y), y)
+            current_mae08 = metrics.MAE(mu08,y)
             mae08 = list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(inv_scaler(mu1,y), y)
+            current_mae1 = metrics.MAE(mu1,y)
             mae1 = list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
-            current_rmse0 = metrics.RMSE(inv_scaler(mu0,y), y)
+            # current_rmse0 = metrics.RMSE(inv_scaler(mu0,y_unnorm),y_unnorm)
+            current_rmse0 = metrics.RMSE(mu0,y)
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
+            print('Current RMSE', current_rmse0[0])
 
-            current_rmse05 = metrics.RMSE(inv_scaler(mu05,y), y)
+            current_rmse05 = metrics.RMSE(mu05,y)
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(inv_scaler(mu08,y), y)
+            current_rmse08 = metrics.RMSE(mu08,y)
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(inv_scaler(mu1,y), y)
+            current_rmse1 = metrics.RMSE(mu1,y)
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
 
             # MMD
-            current_mmd0 = metrics.MMD(inv_scaler(mu0,y), y)
+            current_mmd0 = metrics.MMD(inv_scaler(mu0,y_unnorm),y_unnorm)
             mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
 
-            current_mmd05 = metrics.MMD(inv_scaler(mu05,y), y)
+            current_mmd05 = metrics.MMD(inv_scaler(mu05,y_unnorm),y_unnorm)
             mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
 
-            current_mmd08 = metrics.MMD(inv_scaler(mu08,y), y)
+            current_mmd08 = metrics.MMD(inv_scaler(mu08,y_unnorm),y_unnorm)
             mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
 
-            current_mmd1 = metrics.MMD(inv_scaler(mu1,y), y)
+            current_mmd1 = metrics.MMD(inv_scaler(mu1,y_unnorm),y_unnorm)
             mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
+            crps = []
+            for i in range(8):
+                currmu, _, _ = model(xlr=x, reverse=True, eps=1.0)
+                crps.append(inv_scaler(currmu,y_unnorm))
+
+            mu0crps = torch.stack(crps, dim=1)
+
+            current_crps = metrics.crps_ensemble(y_unnorm, mu0crps)
+            # crps0 = list(map(add, current_crps, crps0))
+            crps0 += current_crps
+            print('Current CRPS', current_crps[0])
 
             print('Visualize results ...')
+
             # Visualize low resolution GT
             grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
@@ -316,7 +337,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             # Visualize High-Res GT
-            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
+            grid_high_res_gt = torchvision.utils.make_grid(y_unnorm[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
             plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
@@ -393,15 +414,17 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_mae08 = list(map(lambda x: x/len(test_loader), mae08))
     avrg_mae1 = list(map(lambda x: x/len(test_loader), mae1))
 
-    avrg_rmse0 = list(map(lambda x: x/len(test_loader), mse0))
-    avrg_rmse05 = list(map(lambda x: x/len(test_loader), mse05))
-    avrg_rmse08 = list(map(lambda x: x/len(test_loader), mse08))
-    avrg_rmse1 = list(map(lambda x: x/len(test_loader), mse1))
+    avrg_rmse0 = list(map(lambda x: x/len(test_loader), rmse0))
+    avrg_rmse05 = list(map(lambda x: x/len(test_loader), rmse05))
+    avrg_rmse08 = list(map(lambda x: x/len(test_loader), rmse08))
+    avrg_rmse1 = list(map(lambda x: x/len(test_loader), rmse1))
 
     avrg_mmd0 = list(map(lambda x: x/len(test_loader), mmd0))
     avrg_mmd05 = list(map(lambda x: x/len(test_loader), mmd05))
     avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08))
     avrg_mmd1 = list(map(lambda x: x/len(test_loader),mmd1))
+
+    avrg_crps = list(map(lambda x: x/len(test_loader), crps0))
 
     # Write metric results to a file in case to recreate plots
     with open(savedir_txt + 'metric_results.txt','w') as f:
@@ -484,6 +507,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         f.write('Avrg MMD mu1:\n')
         f.write("%f \n" %np.mean(avrg_mmd1))
 
+        f.write('Avrg CRPS mu0:\n')
+        f.write("%f \n" %np.mean(avrg_crps))
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
     print("Average Fwd. runtime", np.mean(avrg_fwd_time))
