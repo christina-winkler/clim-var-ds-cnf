@@ -109,31 +109,80 @@ def inv_scaler(x, ref=None):
     max_value = ref.max()
     return x * (max_value - min_value) + min_value
 
-def create_rollout(model, init_pred, x_for, x_past, s, lead_time):
-
-    predictions = []
-    predictions.append(init_pred[0,:,:,:,:])
-    interm = x_past[0,:,1,:,:].unsqueeze(1).cuda()
-
-    for l in range(lead_time):
-        context = torch.cat((predictions[l-1], interm), 1) #.unsqueeze(0)
-        x, s = model._predict(x_past=context.unsqueeze(0), state=s)
-        predictions.append(x[0,:,:,:,:])
-        interm = x[0,:,:,:,:] # update intermediate state
-
-    stacked_pred = torch.stack(predictions, dim=0).squeeze(1).squeeze(2)
-
-    # compute absolute error images
-    abs_err = torch.abs(stacked_pred.cuda() - x_for[:,...].cuda().squeeze(1))
-
-    return stacked_pred, abs_err
-
-def visualize_sr_space(model, test_loader, exp_name, modelname, logstep, args):
+def plot_std(model, test_loader, exp_name, modelname, args):
     """
     For this experiment we visualize the super-resolution space for a single
     low-resolution image and its possible HR target predictions. We visualize
-    the standard error of these predictions.
+    the standard deviation of these predictions from the mean of the model.
     """
+    color = 'plasma'
+    savedir_viz = "experiments/{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset)
+    os.makedirs(savedir_viz, exist_ok=True)
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            y_unnorm = item[2].squeeze(1).to(args.device)
+            x_unnorm = item[3].squeeze(1).to(args.device)
+
+            mu0,_,_ = model(xlr=x, reverse=True, eps=0.0000000000000000001)
+
+            samples = []
+            n = 20
+            sq_diff = torch.zeros_like(mu0)
+            for n in range(n):
+                mu1, _, _ = model(xlr=x, reverse=True, eps=0.8)
+                samples.append(mu0)
+                sq_diff += (mu1 - mu0)**2
+
+            # compute population standard deviation
+            sigma = torch.sqrt(sq_diff / n)
+
+            # create plot
+            plt.figure()
+            plt.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap=color)
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/sigma_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            plt.figure()
+            plt.imshow(mu0[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/mu0_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,7)
+            # fig.suptitle('Y, Y_hat, mu, sigma')
+            ax1.imshow(y[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax1.set_title('Ground Truth', fontsize=5)
+            ax1.axis('off')
+            ax2.imshow(mu0[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax2.set_title('Mean', fontsize=5)
+            ax2.axis('off')
+            ax3.imshow(samples[1][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax3.set_title('Sample 1', fontsize=5)
+            ax3.axis('off')
+            ax4.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax4.set_title('Sample 2', fontsize=5)
+            ax4.axis('off')
+            ax5.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax5.set_title('Sample 3', fontsize=5)
+            ax5.axis('off')
+            ax6.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax6.set_title('Sample 4', fontsize=5)
+            ax6.axis('off')
+            ax7.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap='magma')
+            ax7.set_title('Std. Dev.', fontsize=5)
+            ax7.axis('off')
+            plt.tight_layout()
+            plt.savefig(savedir_viz + '/std_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.show()
+            plt.close()
 
     return None
 
@@ -237,6 +286,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             ssim0 = list(map(add, current_ssim_mu0, ssim0))
             ssim0_dens.extend(current_ssim_mu0)
             pd.Series(ssim0_dens).hist()
+            plt.xlabel('SSIM')
+            plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -255,6 +306,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             print('Current PSNR', current_psnr_mu0[0])
             psnr0_dens.extend(current_psnr_mu0)
             pd.Series(psnr0_dens).hist()
+            plt.xlabel('PSNR')
+            plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -286,9 +339,11 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm)
             current_mae0 = metrics.MAE(mu0,y)
             mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
-            print('Current MAE', current_mae0[0])
+            print('Current MAE', np.mean(mae0_plot))
             mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
             pd.Series(mae0_plot).hist()
+            plt.xlabel('MAE')
+            plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
@@ -355,7 +410,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             # Visualize High-Res GT
-            grid_high_res_gt = torchvision.utils.make_grid(y_unnorm[0:9, :, :, :].cpu(), nrow=3)
+            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
             plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
@@ -807,9 +862,12 @@ if __name__ == "__main__":
     # temperature
     # modelname = 'model_epoch_35_step_23750'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
-    # watercontent
+    # watercontent 4x upsampling
     modelname = 'model_epoch_5_step_18250'
     modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_14_15_37_30/model_checkpoints/{}.tar'.format(modelname)
+    # watercontent 2x upsampling
+    # modelname = 'model_epoch_7_step_25250'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_18_16_14_06/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
@@ -821,8 +879,11 @@ if __name__ == "__main__":
 
     params = sum(x.numel() for x in model.parameters() if x.requires_grad)
     print('Nr of Trainable Params {}:  '.format(args.device), params)
+    model = model.to(args.device)
+
+    plot_std(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, args)
 
     print("Evaluate on test split ...")
-    test(model.cuda(), test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999, args)
+    test(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999, args)
     # metrics_eval(args, model.cuda(), test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999)
     # metrics_eval_all()

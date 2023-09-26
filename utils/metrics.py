@@ -67,7 +67,7 @@ def MSE(y_hat, y):
     return sum/(h*w)
 
 def MAE(y_hat, y):
-    _,_,h,w=y.shape
+    _,_,h,w = y.shape
     # import pdb; pdb.set_trace()
     abs_diff = torch.abs(y_hat-y)
     return abs_diff.sum(dim=[1,2,3])/(h*w)
