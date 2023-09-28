@@ -9,7 +9,7 @@ import cv2
 import glob
 
 
-def main(): 
+def main():
     # Configurations
 
     # GT - Ground-truth;
@@ -66,23 +66,39 @@ def main():
         sum(SSIM_all) / len(SSIM_all)))
 
 
+# def calculate_psnr(img1, img2):
+#     img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
+#     img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
+#     img1 = bgr2ycbcr(img1, only_y=True)
+#     img2 = bgr2ycbcr(img2, only_y=True)
+#     # img1 and img2 have range [0, 255]
+#     img1 = img1.astype(np.float64)
+#     img2 = img2.astype(np.float64)
+#     mse = np.mean((img1 - img2)**2)
+#     if mse == 0:
+#         return float('inf')
+#     return 20 * np.log10(255.0/np.maximum(np.sqrt(mse), 1e-6))
+
 def calculate_psnr(img1, img2):
-    img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
-    img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
-    img1 = bgr2ycbcr(img1, only_y=True)
-    img2 = bgr2ycbcr(img2, only_y=True)
+    # img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
+    # img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
+    # img1 = bgr2ycbcr(img1, only_y=True)
+    # img2 = bgr2ycbcr(img2, only_y=True)
     # img1 and img2 have range [0, 255]
     img1 = img1.astype(np.float64)
     img2 = img2.astype(np.float64)
     mse = np.mean((img1 - img2)**2)
     if mse == 0:
         return float('inf')
-    return 20 * np.log10(255.0/np.maximum(np.sqrt(mse), 1e-6))
-
+    # import pdb; pdb.set_trace()
+    max = np.max(img2)
+    return 20 * np.log10(max/np.sqrt(mse))
 
 def ssim(img1, img2):
-    C1 = (0.01 * 255)**2
-    C2 = (0.03 * 255)**2
+    # C1 = (0.01 * 255)**2
+    # C2 = (0.03 * 255)**2
+    C1 = (0.01)**2
+    C2 = (0.01)**2
 
     img1 = img1.astype(np.float64)
     img2 = img2.astype(np.float64)
@@ -100,6 +116,7 @@ def ssim(img1, img2):
 
     ssim_map = ((2 * mu1_mu2 + C1) * (2 * sigma12 + C2)) / ((mu1_sq + mu2_sq +
                 C1) * (sigma1_sq + sigma2_sq + C2))
+
     return ssim_map.mean()
 
 
@@ -108,10 +125,10 @@ def calculate_ssim(img1, img2):
     the same outputs as MATLAB's
     img1, img2: [0, 255]
     '''
-    img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
-    img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
-    img1 = bgr2ycbcr(img1, only_y=True)
-    img2 = bgr2ycbcr(img2, only_y=True)
+    # img1 = cv2.cvtColor(img1, cv2.COLOR_RGB2BGR)
+    # img2 = cv2.cvtColor(img2, cv2.COLOR_RGB2BGR)
+    # img1 = bgr2ycbcr(img1, only_y=True)
+    # img2 = bgr2ycbcr(img2, only_y=True)
     if not img1.shape == img2.shape:
         raise ValueError('Input images must have the same dimensions.')
     if img1.ndim == 2:

@@ -6,6 +6,7 @@ import PIL
 import os
 import torchvision
 from torchvision import transforms
+from ignite.metrics import PSNR
 import matplotlib as mpl
 import pandas as pd
 import sys
@@ -259,18 +260,13 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y_unnorm = item[2].squeeze(1).to(args.device)
             x_unnorm = item[3].squeeze(1)
 
-            start = timeit.default_timer()
             z, nll = model.forward(x_hr=y, xlr=x)
-            stop = timeit.default_timer()
-            print("Time Fwd pass:", stop-start)
-            avrg_fwd_time.append(stop-start)
 
             # Generative loss
             nll_list.append(nll.mean().detach().cpu().numpy())
 
-            # evalutae for different temperatures
-            # import pdb; pdb.set_trace()
-            mu0, _, _ = model(xlr=x, reverse=True, eps=0.2)
+            # evaluate for different temperatures
+            mu0, _, _ = model(xlr=x, reverse=True, eps=0)
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
             mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)
             mu1, _, _ = model(xlr=x, reverse=True, eps=1.0)
@@ -278,51 +274,48 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
-            # import pdb; pdb.set_trace()
-
             # SSIM
             current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y_unnorm), y_unnorm)
-            print('Current SSIM', current_ssim_mu0[0])
-            ssim0 = list(map(add, current_ssim_mu0, ssim0))
-            ssim0_dens.extend(current_ssim_mu0)
-            pd.Series(ssim0_dens).hist()
+            print('Current SSIM', current_ssim_mu0.item())
+            ssim0.append(current_ssim_mu0.detach().cpu().numpy())
+            pd.Series(ssim0).hist()
             plt.xlabel('SSIM')
             plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
             current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y_unnorm), y_unnorm)
-            ssim05 = list(map(add, current_ssim_mu05, ssim05))
+            ssim05.append(current_ssim_mu05)
 
             current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y_unnorm), y_unnorm)
-            ssim08 = list(map(add, current_ssim_mu08, ssim08))
+            ssim08.append(current_ssim_mu08)# = list(map(add, current_ssim_mu08, ssim08))
 
             current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y_unnorm), y_unnorm)
-            ssim1= list(map(add, current_ssim_mu1, ssim1))
+            ssim1.append(current_ssim_mu1) # = list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
             current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
-            psnr0 = list(map(add, current_psnr_mu0, psnr0))
-            print('Current PSNR', current_psnr_mu0[0])
-            psnr0_dens.extend(current_psnr_mu0)
-            pd.Series(psnr0_dens).hist()
+            psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
+            print('Current PSNR', current_psnr_mu0)
+            # psnr0_dens.extend(current_psnr_mu0)
+            pd.Series(psnr0).hist()
             plt.xlabel('PSNR')
             plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
             current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y_unnorm), y_unnorm)
-            psnr05 = list(map(add, current_psnr_mu05, psnr05))
+            psnr05.apend(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
 
             current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y_unnorm), y_unnorm)
-            psnr08 = list(map(add, current_psnr_mu08, psnr08))
+            psnr08.apend(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
 
-            current_psnr_mu1 = metrics.psnr(mu1, y_unnorm)
-            psnr1 = list(map(add, current_psnr_mu1, psnr1))
+            current_psnr_mu1 = metrics.psnr(inv_scaler(mu1, y_unnorm), y_unnorm)
+            psnr1.apend(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
             # current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm)
-            current_mse0 = metrics.MSE(mu0, y)
+            current_mse0 = metrics.MSE(inv_scaler(mu0,y), y)
             mse0 = list(map(add, current_mse0.cpu().numpy(), mse0))
             print('Current MSE', current_psnr_mu0[0])
 
@@ -338,37 +331,37 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # MAE
             # current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm)
             current_mae0 = metrics.MAE(mu0,y)
-            mae0 = list(map(add, current_mae0.cpu().numpy(), mae0))
-            print('Current MAE', np.mean(mae0_plot))
-            mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
-            pd.Series(mae0_plot).hist()
+            mae0.append(current_mae0.detach().cpu().numpy()) # = list(map(add, current_mae0.cpu().numpy(), mae0))
+            print('Current MAE', current_mae0)
+            # mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
+            pd.Series(mae0).hist()
             plt.xlabel('MAE')
             plt.ylabel('nr samples')
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_mae05 = metrics.MAE(mu05,y)
-            mae05 = list(map(add, current_mae05.cpu().numpy(), mae05))
+            current_mae05 = metrics.MAE(inv_scaler(mu05,y),y)
+            mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(mu08,y)
-            mae08 = list(map(add, current_mae08.cpu().numpy(), mae08))
+            current_mae08 = metrics.MAE(inv_scaler(mu08,y),y)
+            mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(mu1,y)
-            mae1 = list(map(add, current_mae1.cpu().numpy(), mae1))
+            current_mae1 = metrics.MAE(inv_scaler(mu1,y),y)
+            mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
             # current_rmse0 = metrics.RMSE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_rmse0 = metrics.RMSE(mu0,y)
+            current_rmse0 = metrics.RMSE(inv_scaler(mu0,y),y)
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
             print('Current RMSE', current_rmse0[0])
 
-            current_rmse05 = metrics.RMSE(mu05,y)
+            current_rmse05 = metrics.RMSE(inv_scaler(mu05,y),y)
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(mu08,y)
+            current_rmse08 = metrics.RMSE(inv_scaler(mu08,y),y)
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(mu1,y)
+            current_rmse1 = metrics.RMSE(inv_scaler(mu1,y),y)
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
 
@@ -863,11 +856,12 @@ if __name__ == "__main__":
     # modelname = 'model_epoch_35_step_23750'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
     # watercontent 4x upsampling
-    modelname = 'model_epoch_5_step_18250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_14_15_37_30/model_checkpoints/{}.tar'.format(modelname)
+
     # watercontent 2x upsampling
     # modelname = 'model_epoch_7_step_25250'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_18_16_14_06/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_5_step_79250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_26_20_41_34_2x/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
@@ -881,7 +875,7 @@ if __name__ == "__main__":
     print('Nr of Trainable Params {}:  '.format(args.device), params)
     model = model.to(args.device)
 
-    plot_std(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, args)
+    # plot_std(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, args)
 
     print("Evaluate on test split ...")
     test(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999, args)

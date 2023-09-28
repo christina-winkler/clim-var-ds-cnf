@@ -58,7 +58,6 @@ class ERA5WTCData(Dataset):
         x,y = self.inputs[idx], self.targets[idx]
 
         if self.s==2:
-            # import pdb; pdb.set_trace()
             x = np.zeros((1,1,y.shape[2]//2,y.shape[2]//2))
             x[0,0,...] = resize(y[0,0,...], (y.shape[2]//2, y.shape[3]//2), anti_aliasing=True)
             transf = transforms.ToTensor()

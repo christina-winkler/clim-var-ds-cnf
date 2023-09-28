@@ -2,11 +2,12 @@ from skimage.metrics import structural_similarity as ssim
 from skimage.metrics import peak_signal_noise_ratio as psnr
 
 from utils.metrics_esrgan import calculate_ssim, calculate_psnr, bgr2ycbcr
+from torchmetrics.functional import structural_similarity_index_measure
 import torchvision
 import numpy as np
 import pdb
 import torch
-# import neuralnet_pytorch
+import torch.nn as nn
 
 def ssim(im1, im2):
     """
@@ -18,41 +19,18 @@ def ssim(im1, im2):
         im1 (tensor):
         im2 (tensor):
     Returns:
-        ssim (list):
+        ssim (value):
     """
+    return structural_similarity_index_measure(im1,im2)
 
-    im1 = im1.permute(0, 3, 2, 1).contiguous().cpu().detach().numpy()
-    im2 = im2.permute(0, 3, 2, 1).contiguous().cpu().detach().numpy()
-
-    ssim = []
-
-    # Compute ssim over samples in mini-batch
-    for i in range(im1.shape[0]):
-        # ssim.append(calculate_ssim(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
-        ssim.append(calculate_ssim(im1[i, :, :, :], im2[i, :, :, :]))
-        # print(ssim)
-    return ssim
-
-def psnr(im1, im2):
-    """
-
-    Args:
-        im1 (tensor)
-        im2 (tensor)
-    Returns:
-        psnr (list)
-    """
-    im1 = im1.permute(0, 3, 2, 1).contiguous().cpu().detach().numpy()
-    im2 = im2.permute(0, 3, 2, 1).contiguous().cpu().detach().numpy()
-    psnr = []
-
-    # Compute psnr over samples in mini-batch
-    # pdb.set_trace()
-    for i in range(im1.shape[0]):
-        # psnr.append(calculate_psnr(im1[i, :, :, :] * 255, im2[i, :, :, :] * 255))
-        psnr.append(calculate_psnr(im1[i, :, :, :], im2[i, :, :, :]))
-        # print(psnr)
-    return psnr
+def psnr(img1, img2):
+    img1 = img1.detach().cpu().numpy()#.astype(np.float64)
+    img2 = img2.detach().cpu().numpy() #.astype(np.float64)
+    mse = np.mean((img1 - img2)**2)
+    if mse == 0:
+        return float('inf')
+    max = np.max(img2)
+    return 20 * np.log10(max/np.sqrt(mse))
 
 def RMSE(yhat,y):
     _,_,h,w=y.shape
@@ -67,10 +45,8 @@ def MSE(y_hat, y):
     return sum/(h*w)
 
 def MAE(y_hat, y):
-    _,_,h,w = y.shape
-    # import pdb; pdb.set_trace()
-    abs_diff = torch.abs(y_hat-y)
-    return abs_diff.sum(dim=[1,2,3])/(h*w)
+    mae = nn.L1Loss()
+    return mae(y_hat,y)
 
 def nrmse(im1, im2):
     """
