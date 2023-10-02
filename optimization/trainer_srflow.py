@@ -121,7 +121,7 @@ def trainer(args, train_loader, valid_loader, model,
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll + l1(out,y)
+            loss = nll + l1(out,y_unnorm)
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
