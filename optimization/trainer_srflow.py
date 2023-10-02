@@ -30,6 +30,23 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+class SoftmaxConstraints(nn.Module):
+    # taken from: https://github.com/RolnickLab/constrained-downscaling/blob/main/models.py
+    def __init__(self, upsampling_factor, exp_factor=1):
+        super(SoftmaxConstraints, self).__init__()
+        self.upsampling_factor = upsampling_factor
+        self.pool = torch.nn.AvgPool2d(kernel_size=upsampling_factor)
+    def forward(self, y, lr):
+        y = torch.exp(y)
+        sum_y = self.pool(y)
+        out = y*torch.kron(lr*1/sum_y, torch.ones((self.upsampling_factor,self.upsampling_factor)).to('cuda'))
+        return out
+
+def inv_scaler(x, ref=None):
+    min_value = ref.min()
+    max_value = ref.max()
+    return x * (max_value - min_value) + min_value
+
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
 
@@ -56,6 +73,9 @@ def trainer(args, train_loader, valid_loader, model,
 
     model.to(device)
 
+    SC = SoftmaxConstraints(upsampling_factor=args.s)
+    l1 = nn.L1Loss()
+
     params = sum(x.numel() for x in model.parameters() if x.requires_grad)
     print('Nr of Trainable Params on {}:  '.format(device), params)
 
@@ -74,6 +94,8 @@ def trainer(args, train_loader, valid_loader, model,
 
             y = item[0].to(device)
             x = item[1].to(device)
+            y_unnorm = item[2].to(device)
+            x_unnorm = item[3].to(device)
 
             model.train()
             optimizer.zero_grad()
@@ -86,14 +108,21 @@ def trainer(args, train_loader, valid_loader, model,
                                             xlr=x[:bsz_p_gpu],
                                             logdet=0)
 
+            # forward loss
             z, nll = model.forward(x_hr=y, xlr=x)
 
+            # reverse loss
+            y_hat, logdet, logpz = model(xlr=x, reverse=True)
+
+            # apply softmax constraint
+            out = SC(inv_scaler(y_hat,y), x_unnorm)
 
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            nll.mean().backward()
+            loss = nll + l1(out,y)
+            loss.mean().backward()
 
             # Update model parameters using calculated gradients
             optimizer.step()

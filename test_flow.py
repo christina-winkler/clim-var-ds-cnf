@@ -202,25 +202,25 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     avrg_bw_time = []
 
     # storing metrics
-    ssim0 = [0] * args.bsz
-    ssim05 = [0] * args.bsz
-    ssim08 = [0] * args.bsz
-    ssim1 = [0] * args.bsz
+    ssim0 = []#  [0] * args.bsz
+    ssim05 =[]# [0] * args.bsz
+    ssim08 =[]# [0] * args.bsz
+    ssim1 = []# [0] * args.bsz
 
-    psnr0 = [0] * args.bsz
-    psnr05 = [0] * args.bsz
-    psnr08 = [0] * args.bsz
-    psnr1 = [0] * args.bsz
+    psnr0 = []# [0] * args.bsz
+    psnr05 = []# [0] * args.bsz
+    psnr08 =[]# [0] * args.bsz
+    psnr1 = []# [0] * args.bsz
 
     mse0 = [0] * args.bsz
     mse05 = [0] * args.bsz
     mse08 = [0] * args.bsz
     mse1 = [0] * args.bsz
 
-    mae0 = [0] * args.bsz
-    mae05 = [0] * args.bsz
-    mae08 = [0] * args.bsz
-    mae1 = [0] * args.bsz
+    mae0 = []
+    mae05 = [] # [0] * args.bsz
+    mae08 = []  # [0] * args.bsz
+    mae1 = [] # [0] * args.bsz
 
     rmse0 = [0] * args.bsz
     rmse05 = [0] * args.bsz
@@ -277,7 +277,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # SSIM
             current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y_unnorm), y_unnorm)
             print('Current SSIM', current_ssim_mu0.item())
-            ssim0.append(current_ssim_mu0.detach().cpu().numpy())
+            ssim0.append(current_ssim_mu0.cpu().numpy())
             pd.Series(ssim0).hist()
             plt.xlabel('SSIM')
             plt.ylabel('nr samples')
@@ -285,16 +285,17 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y_unnorm), y_unnorm)
-            ssim05.append(current_ssim_mu05)
+            ssim05.append(current_ssim_mu05.cpu())
 
             current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y_unnorm), y_unnorm)
-            ssim08.append(current_ssim_mu08)# = list(map(add, current_ssim_mu08, ssim08))
+            ssim08.append(current_ssim_mu08.cpu())# = list(map(add, current_ssim_mu08, ssim08))
 
             current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y_unnorm), y_unnorm)
-            ssim1.append(current_ssim_mu1) # = list(map(add, current_ssim_mu1, ssim1))
+            ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
+            # current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
+            current_psnr_mu0 = metrics.psnr(mu0, y)
             psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
             print('Current PSNR', current_psnr_mu0)
             # psnr0_dens.extend(current_psnr_mu0)
@@ -305,34 +306,37 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y_unnorm), y_unnorm)
-            psnr05.apend(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
+            # current_psnr_mu05 = metrics.psnr(mu05, y)
+            psnr05.append(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
 
+            # current_psnr_mu08 = metrics.psnr(mu08, y)
             current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y_unnorm), y_unnorm)
-            psnr08.apend(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
+            psnr08.append(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
 
+            # current_psnr_mu1 = metrics.psnr(mu1, y)
             current_psnr_mu1 = metrics.psnr(inv_scaler(mu1, y_unnorm), y_unnorm)
-            psnr1.apend(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
+            psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
             # current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm)
-            current_mse0 = metrics.MSE(inv_scaler(mu0,y), y)
-            mse0 = list(map(add, current_mse0.cpu().numpy(), mse0))
-            print('Current MSE', current_psnr_mu0[0])
+            current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
+            mse0 = list(map(add, current_mse0, mse0))
+            print('Current MSE', current_psnr_mu0.item())
 
-            current_mse05 = metrics.MSE(inv_scaler(mu05,y_unnorm), y_unnorm)
-            mse05 = list(map(add, current_mse05.cpu().numpy(), mse05))
+            current_mse05 = metrics.MSE(mu05, y).detach().cpu().numpy()*100
+            mse05 = list(map(add, current_mse05, mse05))
 
-            current_mse08 = metrics.MSE(inv_scaler(mu08,y_unnorm), y_unnorm)
-            mse08 = list(map(add, current_mse08.cpu().numpy(), mse08))
+            current_mse08 = metrics.MSE(mu08,y).detach().cpu().numpy()*100
+            mse08 = list(map(add, current_mse08, mse08))
 
-            current_mse1 = metrics.MSE(inv_scaler(mu1,y_unnorm),y_unnorm)
-            mse1 = list(map(add, current_mse1.cpu().numpy(), mse1))
+            current_mse1 = metrics.MSE(mu1,y).detach().cpu().numpy()*100
+            mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
             # current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_mae0 = metrics.MAE(mu0,y)
-            mae0.append(current_mae0.detach().cpu().numpy()) # = list(map(add, current_mae0.cpu().numpy(), mae0))
-            print('Current MAE', current_mae0)
+            current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
+            mae0.append(current_mae0) # = list(map(add, current_mae0.cpu().numpy(), mae0))
+            print('Current MAE', current_mae0.item())
             # mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
             pd.Series(mae0).hist()
             plt.xlabel('MAE')
@@ -340,30 +344,29 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_mae05 = metrics.MAE(inv_scaler(mu05,y),y)
+            current_mae05 = metrics.MAE(mu05,y).detach().cpu().numpy() * 100
             mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(inv_scaler(mu08,y),y)
+            current_mae08 = metrics.MAE(mu08,y).detach().cpu().numpy() * 100
             mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(inv_scaler(mu1,y),y)
+            current_mae1 = metrics.MAE(mu1,y).detach().cpu().numpy() * 100
             mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
             # current_rmse0 = metrics.RMSE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_rmse0 = metrics.RMSE(inv_scaler(mu0,y),y)
+            current_rmse0 = metrics.RMSE(mu0,y) * 100
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
-            print('Current RMSE', current_rmse0[0])
+            print('Current RMSE', current_rmse0[0].item())
 
-            current_rmse05 = metrics.RMSE(inv_scaler(mu05,y),y)
+            current_rmse05 = metrics.RMSE(mu05,y) * 100
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(inv_scaler(mu08,y),y)
+            current_rmse08 = metrics.RMSE(mu08,y) * 100
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(inv_scaler(mu1,y),y)
+            current_rmse1 = metrics.RMSE(mu1,y)*100
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
-
 
             # MMD
             current_mmd0 = metrics.MMD(inv_scaler(mu0,y_unnorm),y_unnorm)
@@ -460,25 +463,25 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
                 f.write('Avrg bw runtime: %.2f'% np.mean(avrg_bw_time))
 
     # compute average metric values over test set
-    avrg_ssim0 = list(map(lambda x: x/len(test_loader), ssim0))
-    avrg_ssim05 = list(map(lambda x: x/len(test_loader), ssim05))
-    avrg_ssim08 = list(map(lambda x: x/len(test_loader), ssim08))
-    avrg_ssim1 = list(map(lambda x: x/len(test_loader), ssim1))
+    avrg_ssim0 = np.mean(ssim0) # list(map(lambda x: x/len(test_loader), ssim0))
+    avrg_ssim05 = np.mean(ssim05) # list(map(lambda x: x/len(test_loader), ssim05))
+    avrg_ssim08 = np.mean(ssim08) # list(map(lambda x: x/len(test_loader), ssim08))
+    avrg_ssim1 = np.mean(ssim1) # list(map(lambda x: x/len(test_loader), ssim1))
 
-    avrg_psnr0 = list(map(lambda x: x/len(test_loader), psnr0))
-    avrg_psnr05 = list(map(lambda x: x/len(test_loader), psnr05))
-    avrg_psnr08 = list(map(lambda x: x/len(test_loader), psnr08))
-    avrg_psnr1 = list(map(lambda x: x/len(test_loader), psnr1))
+    avrg_psnr0 = np.mean(psnr0) #list(map(lambda x: x/len(test_loader), psnr0))
+    avrg_psnr05 = np.mean(psnr05) #list(map(lambda x: x/len(test_loader), psnr05))
+    avrg_psnr08 = np.mean(psnr08) # list(map(lambda x: x/len(test_loader), psnr08))
+    avrg_psnr1 = np.mean(psnr1) # list(map(lambda x: x/len(test_loader), psnr1))
 
     avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
     avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
     avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
     avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
 
-    avrg_mae0 = list(map(lambda x: x/len(test_loader), mae0))
-    avrg_mae05 = list(map(lambda x: x/len(test_loader), mae05))
-    avrg_mae08 = list(map(lambda x: x/len(test_loader), mae08))
-    avrg_mae1 = list(map(lambda x: x/len(test_loader), mae1))
+    avrg_mae0 = np.mean(mae0) # list(map(lambda x: x/len(test_loader), mae0))
+    avrg_mae05 = np.mean(mae05) # list(map(lambda x: x/len(test_loader), mae05))
+    avrg_mae08 = np.mean(mae08)# list(map(lambda x: x/len(test_loader), mae08))
+    avrg_mae1 = np.mean(mae1) #list(map(lambda x: x/len(test_loader), mae1))
 
     avrg_rmse0 = list(map(lambda x: x/len(test_loader), rmse0))
     avrg_rmse05 = list(map(lambda x: x/len(test_loader), rmse05))
@@ -858,10 +861,12 @@ if __name__ == "__main__":
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    # modelname = 'model_epoch_7_step_25250'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_18_16_14_06/model_checkpoints/{}.tar'.format(modelname)
     modelname = 'model_epoch_5_step_79250'
     modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_26_20_41_34_2x/model_checkpoints/{}.tar'.format(modelname)
+
+    # 4x upsampling
+    # modelname = 'model_epoch_2_step_27000'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_28_22_36_08_4x/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)

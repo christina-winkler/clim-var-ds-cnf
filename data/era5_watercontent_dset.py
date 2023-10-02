@@ -63,7 +63,4 @@ class ERA5WTCData(Dataset):
             transf = transforms.ToTensor()
             x = transf(x[0,...]).permute(1,2,0).unsqueeze(0).type(torch.FloatTensor)
 
-        if not self.testmode:
-            return self.transform(y).squeeze(1), self.transform(x).squeeze(1)
-        else:
-            return self.transform(y).squeeze(1), self.transform(x).squeeze(1), y,x
+        return self.transform(y).squeeze(1), self.transform(x).squeeze(1), y,x

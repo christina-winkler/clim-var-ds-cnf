@@ -73,8 +73,8 @@ def main(args):
         model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                                args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
         if args.resume:
-            modelname = 'model_epoch_2_step_7250.tar'
-            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_28_13_00_22/model_checkpoints/{}".format(modelname)
+            modelname = 'model_epoch_12_step_42250.tar'
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_18_16_14_06_4x/model_checkpoints/{}".format(modelname)
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 

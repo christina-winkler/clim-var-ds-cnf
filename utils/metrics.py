@@ -24,8 +24,8 @@ def ssim(im1, im2):
     return structural_similarity_index_measure(im1,im2)
 
 def psnr(img1, img2):
-    img1 = img1.detach().cpu().numpy()#.astype(np.float64)
-    img2 = img2.detach().cpu().numpy() #.astype(np.float64)
+    img1 = img1.detach().cpu().numpy().astype(np.float64)
+    img2 = img2.detach().cpu().numpy().astype(np.float64)
     mse = np.mean((img1 - img2)**2)
     if mse == 0:
         return float('inf')
