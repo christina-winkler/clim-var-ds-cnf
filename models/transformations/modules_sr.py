@@ -327,12 +327,12 @@ class GaussianPrior(nn.Module):
     def split2d_prior(self, z, lr_feat_map):
         x = torch.cat((z, lr_feat_map), 1)
         h = self.conv(x)
-        mean, sigma = h[:, 0::2], nn.functional.softplus(h[:, 1::2])
+        mean, sigma = h[:, 0::2], nn.functional.softplus(h[:, 1::2].type(torch.DoubleTensor).cuda())
         return mean, sigma
 
     def final_prior(self, lr_feat_map):
         h = self.conv(lr_feat_map)
-        mean, sigma = h[:, 0::2], nn.functional.softplus(h[:, 1::2])
+        mean, sigma = h[:, 0::2], nn.functional.softplus(h[:, 1::2].type(torch.DoubleTensor).cuda())
         return mean, sigma
 
     def forward(self, x, lr_feat_map, eps=1.0, reverse=False, logpz=0, logdet=0,
@@ -354,7 +354,7 @@ class GaussianPrior(nn.Module):
             if not self.final:
                 mean, sigma = self.split2d_prior(x, lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
-                z2 = prior.sample()
+                z2 = prior.sample().type(torch.FloatTensor).cuda()
                 logpz -= prior.log_prob(z2).sum(dim=[1,2,3])
                 z = torch.cat((x, z2), 1)
 
@@ -364,7 +364,7 @@ class GaussianPrior(nn.Module):
                 _, c, h, w = self.flow_var_shape
                 mean, sigma = self.final_prior(lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
-                z = prior.sample()
+                z = prior.sample().type(torch.FloatTensor).cuda()
                 logpz -= prior.log_prob(z).sum(dim=[1,2,3])
                 # print("Test probs", torch.exp(logpz))
 

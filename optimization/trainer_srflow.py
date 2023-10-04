@@ -16,6 +16,7 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 from models.architectures.conv_lstm import *
 from optimization.validation_srflow import validate
+from typing import Tuple, Callable
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
@@ -41,6 +42,12 @@ class SoftmaxConstraints(nn.Module):
         sum_y = self.pool(y)
         out = y*torch.kron(lr*1/sum_y, torch.ones((self.upsampling_factor,self.upsampling_factor)).to('cuda'))
         return out
+
+class MinMaxScaler:
+    def __call__(self, x, max_value, min_value):
+        values_range: Tuple[int, int] = (-1, 1)
+        x = (x - min_value) / (max_value - min_value)
+        return x * (values_range[1] - values_range[0]) + values_range[0]
 
 def inv_scaler(x, ref=None):
     min_value = ref.min()
@@ -72,7 +79,7 @@ def trainer(args, train_loader, valid_loader, model,
     state=None
 
     model.to(device)
-
+    scaler = MinMaxScaler()
     SC = SoftmaxConstraints(upsampling_factor=args.s)
     l1 = nn.L1Loss()
 
@@ -115,13 +122,15 @@ def trainer(args, train_loader, valid_loader, model,
             y_hat, logdet, logpz = model(xlr=x, reverse=True)
 
             # apply softmax constraint
-            out = SC(inv_scaler(y_hat,y), x_unnorm)
+            # out = SC(inv_scaler(y_hat,y), x_unnorm)
+            # scaler = MinMaxScaler()
+            # out_scaled = scaler(out, max_value=out.max(), min_value=out.min())
 
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll + l1(out,y_unnorm)
+            loss = nll  + l1(y_hat, y_unnorm[0,...])
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
@@ -169,6 +178,7 @@ def trainer(args, train_loader, valid_loader, model,
 
                      # Super-Resolving low-res
                     y_hat, logdet, logpz = model(xlr=x, reverse=True)
+                    print(y_hat.max(), y_hat.min(), y.max(), y.min())
                     grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
