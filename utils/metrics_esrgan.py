@@ -97,6 +97,10 @@ def calculate_psnr(img1, img2):
 def ssim(img1, img2):
     # C1 = (0.01 * 255)**2
     # C2 = (0.03 * 255)**2
+
+    C1 = (0.01 * 100)**2
+    C2 = (0.03 * 100)**2
+
     C1 = (0.01)**2
     C2 = (0.01)**2
 
@@ -138,6 +142,7 @@ def calculate_ssim(img1, img2):
             ssims = []
             for i in range(3):
                 ssims.append(ssim(img1, img2))
+                print('shssh')
             return np.array(ssims).mean()
         elif img1.shape[2] == 1:
             return ssim(np.squeeze(img1), np.squeeze(img2))
