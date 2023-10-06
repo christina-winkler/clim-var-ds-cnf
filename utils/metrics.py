@@ -21,15 +21,21 @@ def ssim(im1, im2):
     Returns:
         ssim (value):
     """
+    ssim = []
+    # # Compute ssim over samples in mini-batch
+    # for i in range(im1.shape[0]):
+    #     ssim.append(calculate_ssim(im1[i, :, :, :], im2[i, :, :, :]))
+    #
+    # return np.mean(ssim)
     return structural_similarity_index_measure(im1,im2)
 
-def psnr(img1, img2):
+def psnr(img1, img2, max=100):
     img1 = img1.detach().cpu().numpy().astype(np.float64)
     img2 = img2.detach().cpu().numpy().astype(np.float64)
+    import pdb; pdb.set_trace()
     mse = np.mean((img1 - img2)**2)
     if mse == 0:
         return float('inf')
-    max = np.max(img2)
     return 20 * np.log10(max/np.sqrt(mse))
 
 def RMSE(yhat,y):

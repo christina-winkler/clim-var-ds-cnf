@@ -294,8 +294,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            # current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
-            current_psnr_mu0 = metrics.psnr(mu0, y)
+            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
+            # current_psnr_mu0 = metrics.psnr(mu0, y)
             psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
             print('Current PSNR', current_psnr_mu0)
             # psnr0_dens.extend(current_psnr_mu0)
@@ -318,8 +318,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            # current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm)
-            current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
+            current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm).detach().cpu().numpy()
+            # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
             mse0 = list(map(add, current_mse0, mse0))
             print('Current MSE', current_psnr_mu0.item())
 
@@ -333,8 +333,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
-            # current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
+            current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm).detach().cpu().numpy()
+            # current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
             mae0.append(current_mae0) # = list(map(add, current_mae0.cpu().numpy(), mae0))
             print('Current MAE', current_mae0.item())
             # mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
@@ -585,260 +585,87 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
     return None
 
-
-def metrics_eval(args, model, test_loader, exp_name, modelname, logstep):
+def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
     """
-    Note: batch size indicates lead time we predict.
+    For this experiment we visualize the pixel distribution of the normalized
+    and unnormalized counterpart images of the ground truth and the predicted
+    super-resolved image to assess the calibration.
     """
 
-    print("Metric evaluation on {}...".format(args.trainset))
-
-    # storing metrics
-    ssim = [0] * args.bsz
-    psnr = [0] * args.bsz
-    mmd = [0] * args.bsz
-    emd = [0] * args.bsz
-    rmse = [0] * args.bsz
-
-    state = None
-
-    # creat and save metric plots
-    savedir = "experiments/{}/plots/test_set_{}/".format(exp_name, args.trainset)
-    os.makedirs(savedir, exist_ok=True)
+    savedir_viz = "experiments/{}_{}_{}/snapshots/calibration_histograms/".format(exp_name, modelname, args.trainset)
+    os.makedirs(savedir_viz, exist_ok=True)
 
     model.eval()
     with torch.no_grad():
         for batch_idx, item in enumerate(test_loader):
 
-            x = item[0]
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
 
-            # split time series into lags and prediction window
-            x_past, x_for = x[:,:-1,...], x[:,-1,:,:,:].unsqueeze(1)
+            y_unnorm = item[2].squeeze(1).to(args.device)
+            x_unnorm = item[3].squeeze(1).to(args.device)
 
-            x_past = x_past.permute(0,2,1,3,4).contiguous().float().to(args.device)
-            x_for = x_for.permute(0,2,1,3,4).contiguous().float().to(args.device)
+            # super resolve image
+            mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
 
-            z, state, nll = model.forward(x=x_for, x_past=x_past, state=state)
+            # import pdb; pdb.set_trace()
 
-            # track metric over forecasting period
-            print("Forecast ... ")
-            lead_time = args.bsz-1
-            eps = 0.8
-            predictions = []
-            past = x_past[0,:,:,:,:].unsqueeze(0)
+            n_bins = 100
 
-            x, s = model._predict(x_past=past,
-                                  state=None,
-                                  eps=eps)
+            # get histogram of normalized image
+            pd.Series(y.flatten().detach().cpu().numpy()).hist(stacked=True)
+            plt.xlabel('normalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_y_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
-            print('COMPUTING ROLLOUT!')
-            rollout_len = 0
-            stacked_pred, abs_err = create_rollout(model, x, x_for, x_past, s, lead_time)
-            x = stacked_pred
+            # get histogram of unnormalized image
+            pd.Series(y_unnorm.flatten().detach().cpu().numpy()).hist()
+            plt.xlabel('unnormalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_y_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
-            print('ROLLOUT COMPUTED!')
+            # get histogram of predicted normalized pixel value distribution
+            pd.Series(mu05.flatten().detach().cpu().numpy()).hist()
+            plt.xlabel('predicted normalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_mu05_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
-            # # SSIM
-            current_ssim = metrics.ssim(x, x_for.squeeze(1))
-            ssim = list(map(add, current_ssim, ssim))
-            #
-            # MMD
-            current_mmd = metrics.MMD(x, x_for.squeeze(1))
-            mmd = list(map(add, current_mmd.cpu().numpy(), mmd))
-            #
-            # # PSNR
-            current_psnr = metrics.psnr(x, x_for.squeeze(1))
-            psnr = list(map(add, current_psnr, psnr))
+            # distribution of predicted unnormalized values
+            mu05_unnorm = inv_scaler(mu05, ref=y)
+            pd.Series(mu05_unnorm.flatten().detach().cpu().numpy()).hist()
+            plt.xlabel('predicted unnormalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_mu05_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
-            # RMSE
-            max_value = 315.91873
-            min_value = 241.22385
-            x_new = x * (max_value - min_value) + min_value
-            x_for_new = x_for * (max_value - min_value) + min_value
-            current_rmse = metrics.RMSE(x_new.squeeze(1), x_for_new.squeeze(1)) / 10 # divide by ten only for geop data
-            rmse = list(map(add, current_rmse.cpu().numpy(), rmse))
+            # plot distribution of absolute difference in unnormalized space
+            diff_unnorm = torch.abs(y_unnorm-mu05_unnorm).flatten()
+            pd.Series(diff_unnorm.detach().cpu().numpy()).hist()
+            plt.xlabel('abs diff unnormalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_absdiff_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
-            # EMD
-            # current_emd = []
-            # for i in range(args.bsz):
-            #    1
-
-            # current_emd = np.array(current_emd)
-            # emd = list(map(add, current_emd, emd))
-            # print(ssim[0], psnr[0], mmd[0], emd[0])
-            # pdb.set_trace()
-            print('3 h', current_rmse[3], current_psnr[3], current_ssim[3])#, emd[0])
-            print('20 h', current_rmse[20], current_psnr[20], current_ssim[20])#, emd[0])
-
-            print(batch_idx)
-            if batch_idx == 20:
-                print(batch_idx)
-                break
-
-
-        # compute average SSIM for each temperature map on predicted day t
-        avrg_ssim = list(map(lambda x: x/20, ssim))#len(test_loader), ssim))
-
-        # compute average PSNR for each temperature map on predicted day t
-        avrg_psnr = list(map(lambda x: x/20, psnr))#len(test_loader), psnr))
-
-        avrg_mmd = list(map(lambda x: x/20, mmd))#len(test_loader), mmd))
-
-        avrg_emd = list(map(lambda x: x/20, emd))#len(test_loader), emd))
-
-        avrg_rmse = list(map(lambda x: x/20, rmse))#len(test_loader), rmse))
-
-        plt.plot(avrg_ssim, label='ST-Flow Best SSIM', color='deeppink')
-        plt.grid(axis='y')
-        plt.axvline(x=args.lag_len, color='orangered')
-        plt.legend(loc='upper right')
-        plt.xlabel('Time-Step')
-        plt.ylabel('Average SSIM')
-        plt.savefig(savedir + '/avrg_ssim.png', dpi=300)
-        plt.close()
-
-        plt.plot(avrg_psnr, label='ST-Flow Best PSNR', color='deeppink')
-        plt.grid(axis='y')
-        plt.axvline(x=args.lag_len, color='orangered')
-        plt.legend(loc='upper right')
-        plt.xlabel('Time-Step')
-        plt.ylabel('Average PSNR')
-        plt.savefig(savedir + '/avrg_psnr.png', dpi=300)
-        plt.close()
-
-        plt.plot(avrg_mmd, label='ST-Flow Best MMD', color='deeppink')
-        plt.grid(axis='y')
-        plt.axvline(x=args.lag_len, color='orangered')
-        plt.legend(loc='upper right')
-        plt.xlabel('Time-Step')
-        plt.ylabel('Average MMD')
-        plt.savefig(savedir + '/avrg_mmd.png', dpi=300)
-        plt.close()
-
-        plt.plot(avrg_emd, label='ST-Flow Best EMD', color='deeppink')
-        plt.grid(axis='y')
-        plt.axvline(x=args.lag_len, color='orangered')
-        plt.legend(loc='upper right')
-        plt.xlabel('Time-Step')
-        plt.ylabel('Average EMD')
-        plt.savefig(savedir + '/avrg_emd.png', dpi=300)
-        plt.close()
-
-        plt.plot(avrg_rmse, label='ST-Flow Best RMSE', color='deeppink')
-        plt.grid(axis='y')
-        plt.axvline(x=args.lag_len, color='orangered')
-        plt.legend(loc='upper right')
-        plt.xlabel('Time-Step')
-        plt.ylabel('Average RMSE')
-        plt.savefig(savedir + '/avrg_rmse.png', dpi=300)
-        plt.close()
-
-        # Write metric results to a file in case to recreate plots
-        with open(savedir + 'metric_results.txt','w') as f:
-            f.write('Avrg SSIM over forecasting period:\n')
-            for item in avrg_ssim:
-                f.write("%f \n" % item)
-
-            f.write('Avrg PSNR over forecasting period:\n')
-            for item in avrg_psnr:
-                f.write("%f \n" % item)
-
-            f.write('Avrg MMD over forecasting period:\n')
-            for item in avrg_mmd:
-                f.write("%f \n" % item)
-
-            f.write('Avrg EMD over forecasting period:\n')
-            for item in avrg_emd:
-                f.write("%f \n" % item)
-
-            f.write('Avrg RMSE over forecasting period:\n')
-            for item in avrg_rmse:
-                f.write("%f \n" % item)
-
-        return None
-
-def metrics_eval_all():
-
-    print("Creating unified plot from text files ...")
-
-    # pdb.set_trace()
-    path = os.getcwd() + '/experiments/'
-
-    def read_metrics(fname):
-
-        ssim = []
-        psnr = []
-        rmse = []
-        mmd = []
-        lines = []
-
-        # read metric results from file
-        print('Reading file:', fname)
-        with open(path + fname, 'r') as f:
-            line = f.readline()
-
-            while line != '':
-                print(line, end='')
-                line = f.readline()
-
-                if line == 'Avrg MMD over forecasting period:\n':
-                    rmse = lines
-                    lines = []
-
-                elif line == '':
-                    pass
-
-                else:
-                    lines.append(float(line))
-            mmd = lines
-
-        return rmse, mmd
-
-    # avrg_psnr_l1k8, avrg_ssim_l1k8 = read_metrics('metric_results_flow-1-level-8-k.txt')
-    # avrg_psnr_l2k4, avrg_ssim_l2k4 = read_metrics('metric_results_flow-2-level-4-k.txt')
-    # avrg_psnr_l3k4, avrg_ssim_l3k4 = read_metrics('metric_results_flow-3-level-4-k.txt')
-    # avrg_psnr_3dunet, avrg_ssim_3dunet = read_metrics('metric_results_3dunet.txt')
-    avrg_rmse_3dunet, avrg_mmd_3dunet = read_metrics('metric_results_wbench3dunet_30days.txt')
-    # avrg_rmse_l3k4, avrg_mmd_l3k4 = read_metrics('metric_results_30daysera5_flow.txt')
-    # avrg_rmse_l1k8, avrg_mmd_l1k8 = read_metrics('metric_results_flow_era5_1l8k.txt')
-    avrg_rmse_l3k3, avrg_mmd_l3k3 = read_metrics('metric_results_wbench_l3k3.txt')
-
-    # plt.plot(avrg_rmse_l1k8, label='ST-Flow L-1 K-8', color='darkviolet')
-    # plt.plot(avrg_rmse_l3k4, label='ST-Flow L-3 K-4', color='deeppink')
-    plt.plot(avrg_rmse_l3k3, label='ST-Flow L-3 K-3', color='mediumslateblue')
-    plt.plot(avrg_rmse_3dunet, label='3DUnet', color='lightseagreen')
-    plt.grid(axis='y')
-    plt.axvline(x=2, color='orangered')
-    plt.legend(loc='best')
-    plt.xlabel('Time-Step')
-    plt.ylabel('Average RMSE')
-    plt.savefig(path + '/avrg_rmse_all_wbench.png', dpi=300)
-
-    # plt.plot(avrg_ssim_l1k8, label='ST-Flow L1-K-8 Best SSIM', color='darkviolet')
-    # plt.plot(avrg_ssim_l3k4, label='ST-Flow L3-K-4 Best SSIM', color='deeppink')
-    # plt.plot(avrg_ssim_l2k4, label='ST-Flow L2-K-4 Best SSIM', color='mediumslateblue')
-    # plt.plot(avrg_ssim_3dunet, label='3DUnet Best SSIM', color='lightseagreen')
-    # plt.grid(axis='y')
-    # plt.axvline(x=1, color='orangered')
-    # plt.legend(loc='upper right')
-    # plt.xlabel('Time-Step')
-    # plt.ylabel('Average SSIM')
-    # plt.savefig(path + '/avrg_ssim.png', dpi=300)
-    # plt.show()
-
-    # plt.plot(avrg_psnr_l1k8, label='ST-Flow L1-K-8 Best PSNR', color='darkviolet')
-    # plt.plot(avrg_psnr_l2k4, label='ST-Flow L2-K-4 Best PSNR', color='deeppink')
-    # plt.plot(avrg_psnr_l3k4, label='ST-Flow L3-K-4 Best PSNR', color='mediumslateblue')
-    # plt.plot(avrg_psnr_3dunet, label='3DUnet Best PNSR', color='lightseagreen')
-    # plt.grid(axis='y')
-    # plt.axvline(x=1, color='orangered')
-    # plt.legend(loc='upper right')
-    # plt.xlabel('Time-Step')
-    # plt.ylabel('Average PSNR')
-    # plt.savefig(path + '/avrg_psnr.png', dpi=300)
-    # plt.show()
+            # plot distribution of absolute difference in normalized space
+            diff_unnorm = torch.abs(y-mu05).flatten()
+            pd.Series(diff_unnorm.detach().cpu().numpy()).hist()
+            plt.xlabel('abs diff normalized values')
+            plt.ylabel('nr of pixels')
+            plt.savefig(savedir_viz + '/histogram_absdiff_norm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.show()
+            plt.close()
 
     return None
+
+
 
 if __name__ == "__main__":
 
@@ -861,8 +688,8 @@ if __name__ == "__main__":
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_5_step_79250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_26_20_41_34_2x/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_0_step_8250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_04_17_06_40/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling
     # modelname = 'model_epoch_2_step_27000'
@@ -880,9 +707,9 @@ if __name__ == "__main__":
     print('Nr of Trainable Params {}:  '.format(args.device), params)
     model = model.to(args.device)
 
-    # plot_std(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, args)
+    exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
+    # plot_std(model, test_loader, exp_name, modelname, args)
+    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    test(model, test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999, args)
-    # metrics_eval(args, model.cuda(), test_loader, "flow-{}-level-{}-k".format(args.L, args.K), modelname, -99999)
-    # metrics_eval_all()
+    # test(model, test_loader, exp_name, modelname, -99999, args)
