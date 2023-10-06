@@ -50,8 +50,8 @@ class MinMaxScaler:
         return x * (values_range[1] - values_range[0]) + values_range[0]
 
 def inv_scaler(x, ref=None):
-    min_value = ref.min()
-    max_value = ref.max()
+    min_value = 0 #ref.min()
+    max_value = 100 # ref.max()
     return x * (max_value - min_value) + min_value
 
 def trainer(args, train_loader, valid_loader, model,
@@ -101,8 +101,8 @@ def trainer(args, train_loader, valid_loader, model,
 
             y = item[0].to(device)
             x = item[1].to(device)
-            y_unnorm = item[2].to(device)
-            x_unnorm = item[3].to(device)
+            y_unorm = item[2].to(device)
+            x_unorm = item[3].to(device)
 
             model.train()
             optimizer.zero_grad()
@@ -130,7 +130,7 @@ def trainer(args, train_loader, valid_loader, model,
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll  + l1(y_hat, y_unnorm[0,...])
+            loss = nll  + l1(inv_scaler(y_hat), y_unorm[0,...])
             loss.mean().backward()
 
             # Update model parameters using calculated gradients

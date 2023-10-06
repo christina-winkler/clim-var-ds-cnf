@@ -106,8 +106,8 @@ def inv_scaler_temp(x):
     return x * (max_value - min_value) + min_value
 
 def inv_scaler(x, ref=None):
-    min_value = ref.min()
-    max_value = ref.max()
+    min_value = 0
+    max_value = 100 
     return x * (max_value - min_value) + min_value
 
 def plot_std(model, test_loader, exp_name, modelname, args):
@@ -595,6 +595,8 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
     savedir_viz = "experiments/{}_{}_{}/snapshots/calibration_histograms/".format(exp_name, modelname, args.trainset)
     os.makedirs(savedir_viz, exist_ok=True)
 
+    print("Generating Histograms ... ")
+
     model.eval()
     with torch.no_grad():
         for batch_idx, item in enumerate(test_loader):
@@ -602,68 +604,53 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2].squeeze(1).to(args.device)
-            x_unnorm = item[3].squeeze(1).to(args.device)
+            y_unorm = item[2].squeeze(1).to(args.device)
+            x_unorm = item[3].squeeze(1).to(args.device)
+
+            # import pdb; pdb.set_trace()
 
             # super resolve image
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
 
-            # import pdb; pdb.set_trace()
-
             n_bins = 100
+            fig, ((ax0,ax1)) = plt.subplots(nrows=1, ncols=2, figsize=(30, 10))
 
-            # get histogram of normalized image
-            pd.Series(y.flatten().detach().cpu().numpy()).hist(stacked=True)
-            plt.xlabel('normalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_y_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
+            colors = ['mediumorchid', 'coral']
+
+            labelax0 = [r'$\tilde{y}$',r'$\tilde{\hat{y}}$']
+            y_fl = y.flatten().detach().cpu().numpy()
+            mu05_fl = mu05.flatten().detach().cpu().numpy()
+            ax0.hist(np.stack((y_fl, mu05_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax0)
+            ax0.set_xlabel('nr of bins')
+            ax0.set_ylabel('pixel values')
+            ax0.set_title('Normalized prediction vs. ground truth pixel distribution')
+            ax0.legend(prop={'size': 10})
+
+            labelax1 = ['y',r'$\hat{y}$']
+            mu05_unorm = inv_scaler(mu05, ref=y_unorm)
+            y_unorm_fl = y_unorm.flatten().detach().cpu().numpy()
+            mu05_unorm_fl = mu05_unorm.flatten().detach().cpu().numpy()
+            ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
+            ax1.set_xlabel('nr of bins')
+            ax1.set_ylabel('pixel values')
+            ax1.set_title('Unormalized prediction vs. ground truth pixel distribution')
+            ax1.legend(prop={'size': 10})
+
+            # plt.show()
+
+            # labelax2 = ['abs diff normalized']
+            # newcolor = ['deepskyblue', 'palegreen']
+            # diff = torch.abs(y-mu05).flatten().detach().cpu().numpy()
+            # diff_unorm = torch.abs(y_unorm-mu05_unorm).flatten().detach().cpu().numpy()
+            # ax2.hist(np.stack((diff, diff_unorm),axis=1), n_bins, density=True, histtype='barstacked',color=newcolor, label=labelax2)
+            # ax2.set_xlabel('nr of bins')
+            # ax2.set_ylabel('pixel values')
+            # ax2.set_title('Absolute difference distributions')
+            # ax2.legend(prop={'size': 10})
+            # plt.show()
+
+            fig.savefig(savedir_viz + '/histogram_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
-
-            # get histogram of unnormalized image
-            pd.Series(y_unnorm.flatten().detach().cpu().numpy()).hist()
-            plt.xlabel('unnormalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_y_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
-            plt.close()
-
-            # get histogram of predicted normalized pixel value distribution
-            pd.Series(mu05.flatten().detach().cpu().numpy()).hist()
-            plt.xlabel('predicted normalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_mu05_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
-            plt.close()
-
-            # distribution of predicted unnormalized values
-            mu05_unnorm = inv_scaler(mu05, ref=y)
-            pd.Series(mu05_unnorm.flatten().detach().cpu().numpy()).hist()
-            plt.xlabel('predicted unnormalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_mu05_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
-            plt.close()
-
-            # plot distribution of absolute difference in unnormalized space
-            diff_unnorm = torch.abs(y_unnorm-mu05_unnorm).flatten()
-            pd.Series(diff_unnorm.detach().cpu().numpy()).hist()
-            plt.xlabel('abs diff unnormalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_absdiff_unnorm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
-            plt.close()
-
-            # plot distribution of absolute difference in normalized space
-            diff_unnorm = torch.abs(y-mu05).flatten()
-            pd.Series(diff_unnorm.detach().cpu().numpy()).hist()
-            plt.xlabel('abs diff normalized values')
-            plt.ylabel('nr of pixels')
-            plt.savefig(savedir_viz + '/histogram_absdiff_norm_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.show()
-            plt.close()
-
-    return None
 
 
 
@@ -688,8 +675,8 @@ if __name__ == "__main__":
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_0_step_8250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_04_17_06_40/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_0_step_250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_06_12_42_11/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling
     # modelname = 'model_epoch_2_step_27000'
