@@ -106,8 +106,8 @@ def inv_scaler_temp(x):
     return x * (max_value - min_value) + min_value
 
 def inv_scaler(x, ref=None):
-    min_value = 0
-    max_value = 100 
+    min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
     return x * (max_value - min_value) + min_value
 
 def plot_std(model, test_loader, exp_name, modelname, args):
@@ -607,8 +607,6 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             y_unorm = item[2].squeeze(1).to(args.device)
             x_unorm = item[3].squeeze(1).to(args.device)
 
-            # import pdb; pdb.set_trace()
-
             # super resolve image
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
 
@@ -696,7 +694,7 @@ if __name__ == "__main__":
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
     # plot_std(model, test_loader, exp_name, modelname, args)
-    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    # test(model, test_loader, exp_name, modelname, -99999, args)
+    test(model, test_loader, exp_name, modelname, -99999, args)

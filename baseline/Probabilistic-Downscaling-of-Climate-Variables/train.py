@@ -30,13 +30,19 @@ if __name__ == "__main__":
     set_seeds()  # For reproducability.
 
     parser = argparse.ArgumentParser()
-    # parser.add_argument("-c", "--config", type=str, help="JSON file for configuration")
+    parser.add_argument("-c", "--config", type=str, default='experiment_configs/t2m_LocalStandardScaling_Monthly.json', help="JSON file for configuration")
     parser.add_argument("-p", "--phase", type=str, choices=["train", "val"],
                         help="Run either training or validation(inference).", default="train")
     parser.add_argument("-gpu", "--gpu_ids", type=str, default=None)
+    parser.add_argument("--trainset", type=str, default="era5-TCW",
+                        help="Dataset to train the model on.")
+    parser.add_argument("--datadir", type=str, default="data",
+                        help="Dataset to train the model on.")
+    parser.add_argument("--s", type=int, default=4, help="Upscaling factor.")
+    parser.add_argument("--bsz", type=int, default=16, help="batch size")
     args = parser.parse_args()
 
-    # configs = Config(args)
+    configs = Config(args)
 
     torch.backends.cudnn.enabled = True
     torch.backends.cudnn.benchmark = True
@@ -71,13 +77,12 @@ if __name__ == "__main__":
     #                                                                   apply_tranform_monthly=configs.tranform_monthly)
 
 
-    logger.info(f"Train size: {len(train_data)}, Val size: {len(val_data)}.")
+
     # train_loader, val_loader = create_dataloaders(train_data, val_data, batch_size=configs.batch_size,
     #                                               use_shuffle=configs.use_shuffle, num_workers=configs.num_workers)
     # TODO: change datasets
     train_loader, val_loader, test_loader, args = dataloading.load_data(args)
-
-    import pdb; pdb.set_trace()
+    logger.info(f"Train size: {len(train_loader)}, Val size: {len(val_loader)}.")
 
     logger.info("Training and Validation dataloaders are ready.")
 
@@ -128,11 +133,13 @@ if __name__ == "__main__":
             diffusion.feed_data(train_data)
             diffusion.optimize_parameters()
             # diffusion.lr_scheduler_step()  # For lr scheduler updates per iteration.
+
             accumulate_statistics(diffusion.get_current_log(), accumulated_statistics)
 
             # Logging the training information.
             if current_step % configs.print_freq == 0:
                 message = f"Epoch: {current_epoch:5}  |  Iteration: {current_step:8}"
+                print(message)
 
                 for metric, values in accumulated_statistics.items():
                     mean_value = np.mean(values)

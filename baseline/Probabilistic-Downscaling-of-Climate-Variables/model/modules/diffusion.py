@@ -350,7 +350,7 @@ class GaussianDiffusion(nn.Module):
         if not self.conditional:
             noise_reconstructed = self.denoise_net(x_noisy, continuous_sqrt_alpha_cumprod)
         else:
-            # Conditioning on interpolated LR image called INTERPOLATED.
+            # conditioning on interpolated LR image called INTERPOLATED.
             noise_reconstructed = self.denoise_net(torch.cat([x_in["INTERPOLATED"], x_noisy], dim=1),
                                                    continuous_sqrt_alpha_cumprod)
 

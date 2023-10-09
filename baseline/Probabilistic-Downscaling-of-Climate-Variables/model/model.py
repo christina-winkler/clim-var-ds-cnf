@@ -124,7 +124,8 @@ class DDPM(BaseModel):
                 INTERPOLATED: a batch of upsampled (via interpolation) images [B, C, H, W]
             and list of corresponding months of samples in a batch.
         """
-        self.data, self.months = self.set_device(data[0]), data[1]
+        data_dict = {'HR': data[0], 'LR': data[1], 'INTERPOLATED': torch.nn.functional.interpolate(data[1], mode='bicubic', scale_factor=4)} # TODO: change scale fac dyn.
+        self.data, self.months = self.set_device(data_dict), None
 
     def optimize_parameters(self) -> None:
         """Computes loss and performs GD step on learnable parameters.

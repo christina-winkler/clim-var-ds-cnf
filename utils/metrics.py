@@ -32,7 +32,6 @@ def ssim(im1, im2):
 def psnr(img1, img2, max=100):
     img1 = img1.detach().cpu().numpy().astype(np.float64)
     img2 = img2.detach().cpu().numpy().astype(np.float64)
-    import pdb; pdb.set_trace()
     mse = np.mean((img1 - img2)**2)
     if mse == 0:
         return float('inf')

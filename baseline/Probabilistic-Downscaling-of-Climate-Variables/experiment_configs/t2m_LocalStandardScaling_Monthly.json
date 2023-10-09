@@ -12,7 +12,7 @@
     "data": {
         "name": "WeatherBench",
         "dataroot": "/mnt/data/papikyan/WeatherBench/numpy",
-        "batch_size": 16,
+        "batch_size": 1,
         "num_workers": 4,
         "use_shuffle": true,
         "train_min_date": "1979-01-01-00",
@@ -31,10 +31,10 @@
         "unet": {
             "in_channel": 2,  // This should be equal to the number of variables * 2. Used in only networks.py 121 line.
             "out_channel": 1, // This should be equal to the number of variables.
-            "inner_channel": 64,
-            "norm_groups": 32,  // 16
+            "inner_channel": 32, // 32, 64
+            "norm_groups": 8,  // 8, 16, 32
             "channel_multiplier": [1, 2, 4, 8],
-            "attn_res": [16],  // Possible values are 128, 64, 32, 16 and depends on channel_multipliers.
+            "attn_res": [8],  // Possible values are 128, 64, 32, 16, 8 and depends on channel_multipliers.
             "res_blocks": 1,
             "dropout": 0.7,
             "init_method": "kaiming"

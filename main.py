@@ -139,7 +139,7 @@ if __name__ == "__main__":
                         help="If training should be resumed.")
 
     # hyperparameters
-    parser.add_argument("--nbits", type=int, default=8,
+    parser.add_argument("--nbits", type=int, default=6.64,
                         help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
     parser.add_argument("--crop_size", type=int, default=500,

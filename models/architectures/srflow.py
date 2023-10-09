@@ -174,7 +174,7 @@ class SRFlow(nn.Module):
                                 s=s, bsz=bsz, K=K, L=L, nb=nb, cond_channels=cond_channels,
                                 noscale=noscale, noscaletest=noscaletest, testmode=testmode)
 
-        self._variational_dequantizer = None
+        # self._variational_dequantizer = None
         self.nbins = 2 ** n_bits_x
 
     def forward(self, x_hr=None, xlr=None, z=None, logdet=0, eps=1.0, reverse=False,
@@ -190,7 +190,11 @@ class SRFlow(nn.Module):
     def normalizing_flow(self, x_hr, x_lr, eps):
 
         # Dequantize pixels: Discrete -> Continuous
-        z, logdet = self._dequantize_uniform(x_hr, self.nbins)
+        # z, logdet = self._dequantize_uniform(x_hr, self.nbins)
+        z=x_hr
+
+        # Initialize log determinant
+        logdet = torch.zeros_like(z[:, 0, 0, 0])
 
         # Push z through flow
         z, logdet, logp_z = self.flow.forward(z=z, xlr=x_lr, eps=eps, logdet=logdet)
