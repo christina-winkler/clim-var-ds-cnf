@@ -139,7 +139,7 @@ if __name__ == "__main__":
                         help="If training should be resumed.")
 
     # hyperparameters
-    parser.add_argument("--nbits", type=int, default=6.64,
+    parser.add_argument("--nbits", type=int, default=8,
                         help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
     parser.add_argument("--crop_size", type=int, default=500,
@@ -164,6 +164,8 @@ if __name__ == "__main__":
                         help="Dataset to train the model on.")
     parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")
+    parser.add_argument("--vminmax", type=int, default=(0,100),
+                        help="Values according to which the plots are normalized.")
 
     args = parser.parse_args()
     main(args)

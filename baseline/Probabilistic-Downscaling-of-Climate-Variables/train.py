@@ -25,7 +25,6 @@ from weatherbench_data.utils import reverse_transform, reverse_transform_tensor,
 
 warnings.filterwarnings("ignore")
 
-
 if __name__ == "__main__":
     set_seeds()  # For reproducability.
 
@@ -54,6 +53,17 @@ if __name__ == "__main__":
     logger.info(dict2str(configs.get_hyperparameters_as_dict()))
     tb_logger = SummaryWriter(log_dir=configs.tb_logger)
 
+    def inv_scaler(x):
+        min_value = 241.22385
+        max_value = 315.91873
+        return x * (max_value - min_value) + min_value
+
+    def scaler(x):
+        values_range = (0, 1)
+        min_value = 241.22385
+        max_value = 315.91873
+        x = (x - min_value) / (max_value - min_value)
+        return x * (values_range[1] - values_range[0]) + values_range[0]
     # aim_logger = Run(run_hash=configs.name, repo='./experiments/aim/', experiment=configs.name)
     # aim_logger["hparams"] = {"train_min_date": configs.train_min_date, "train_max_date": configs.train_max_date,
     #                          "val_min_date": configs.val_min_date, "val_max_date": configs.val_max_date,
@@ -64,7 +74,7 @@ if __name__ == "__main__":
     #                          "train_schedule": configs.train_schedule, "val_schedule": configs.val_schedule,
     #                          "optimizer": configs.optimizer_type, "learning_rate": configs.lr}
 
-    # transformation = get_transformation(configs.transformation)
+    transformation = get_transformation(configs.transformation)
     # train_data, val_data, metadata, transformations = create_datasets(dataroot=configs.dataroot,
     #                                                                   name=configs.name,
     #                                                                   train_min_date=configs.train_min_date,
@@ -179,9 +189,15 @@ if __name__ == "__main__":
                     # Computing metrics on vlaidation data.
                     visuals = diffusion.get_current_visuals()
 
-                    inv_visuals = reverse_transform(visuals, transformations,
-                                                    configs.variables, diffusion.get_months(),
-                                                    configs.tranform_monthly)
+                    # inv_visuals = reverse_transform(visuals, transformations,
+                    #                                 configs.variables, diffusion.get_months(),
+                    #                                 configs.tranform_monthly)
+
+                    inv_visuals = {'HR': None, 'SR': None}
+                    inv_visuals["HR"] = inv_scaler(visuals['HR'])
+                    inv_visuals["SR"] = inv_scaler(visuals['SR'])
+                    inv_visuals["LR"] = inv_scaler(visuals['LR'])
+                    inv_visuals["INTERPOLATED"] = inv_scaler(visuals['INTERPOLATED'])
 
                     # Computing MSE and RMSE on original data.
                     mse_value = mse_loss(inv_visuals["HR"], inv_visuals["SR"])
@@ -189,9 +205,9 @@ if __name__ == "__main__":
                     val_metrics["RMSE"] += torch.sqrt(mse_value)
                     val_metrics["MAE"] += l1_loss(inv_visuals["HR"], inv_visuals["SR"])
 
-                    mean_temp_pred = inv_visuals["SR"].mean(axis=[1, 2, 3])
-                    for m, t in zip(diffusion.get_months(), mean_temp_pred):
-                        month2mean_temperature[int(m)].append(t)
+                    # mean_temp_pred = inv_visuals["SR"].mean(axis=[1, 2, 3])
+                    # for m, t in zip(diffusion.get_months(), mean_temp_pred):
+                    #     month2mean_temperature[int(m)].append(t)
 
                     # Computing residuals for visualization.
                     residuals = inv_visuals["SR"] - inv_visuals["HR"]
@@ -202,10 +218,14 @@ if __name__ == "__main__":
                         logger.info(f"[{idx//configs.val_vis_freq}] Visualizing and storing some examples.")
 
                         sr_candidates = diffusion.generate_multiple_candidates(n=configs.sample_size)
-                        reverse_transform_candidates(sr_candidates, reverse_transform_tensor,
-                                                     transformations, configs.variables,
-                                                     "hr", diffusion.get_months(),
-                                                     configs.tranform_monthly)
+
+                        # reverse_transform_candidates(sr_candidates, reverse_transform_tensor,
+                        #                              transformations, configs.variables,
+                        #                              "hr", diffusion.get_months(),
+                        #                              configs.tranform_monthly)
+                        for i in range(5):
+                            sr_candidates[i]=inv_scaler(sr_candidates[i])
+
                         mean_candidate = sr_candidates.mean(dim=0)  # [B, C, H, W]
                         std_candidate = sr_candidates.std(dim=0)  # [B, C, H, W]
                         bias = mean_candidate - inv_visuals["HR"]
@@ -218,6 +238,7 @@ if __name__ == "__main__":
                                    inv_visuals["LR"][:configs.n_val_vis].min(),
                                    inv_visuals["INTERPOLATED"][:configs.n_val_vis].min(),
                                    mean_candidate[:configs.n_val_vis].min())
+
                         vmax = max(inv_visuals["HR"][:configs.n_val_vis].max(),
                                    inv_visuals["SR"][:configs.n_val_vis].max(),
                                    inv_visuals["LR"][:configs.n_val_vis].max(),
@@ -225,29 +246,35 @@ if __name__ == "__main__":
                                    mean_candidate[:configs.n_val_vis].max())
 
                         # Choosing the first n_val_vis number of samples to visualize.
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=inv_visuals["HR"][:configs.n_val_vis],
-                                                     path=f"{path}_hr.png", vmin=vmin, vmax=vmax)
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=inv_visuals["SR"][:configs.n_val_vis],
-                                                     path=f"{path}_sr.png", vmin=vmin, vmax=vmax)
-                        construct_and_save_wbd_plots(latitude=metadata.lr_lat, longitude=metadata.lr_lon,
-                                                     data=inv_visuals["LR"][:configs.n_val_vis],
-                                                     path=f"{path}_lr.png", vmin=vmin, vmax=vmax)
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=inv_visuals["INTERPOLATED"][:configs.n_val_vis],
-                                                     path=f"{path}_interpolated.png", vmin=vmin, vmax=vmax)
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=construct_mask(residuals[:configs.n_val_vis]),
-                                                     path=f"{path}_residual.png", vmin=-1, vmax=1,
-                                                     costline_color="red", cmap="binary",
-                                                     label="Signum(SR - HR)")
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=mean_candidate[:configs.n_val_vis],
-                                                     path=f"{path}_mean_sr.png", vmin=vmin, vmax=vmax)
-                        construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
-                                                     data=std_candidate[:configs.n_val_vis],
-                                                     path=f"{path}_std_sr.png", vmin=0.0, cmap="Greens")
+                        # TODO add in visualization code
+                        
+
+
+
+
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=inv_visuals["HR"][:configs.n_val_vis],
+                        #                              path=f"{path}_hr.png", vmin=vmin, vmax=vmax)
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=inv_visuals["SR"][:configs.n_val_vis],
+                        #                              path=f"{path}_sr.png", vmin=vmin, vmax=vmax)
+                        # construct_and_save_wbd_plots(latitude=metadata.lr_lat, longitude=metadata.lr_lon,
+                        #                              data=inv_visuals["LR"][:configs.n_val_vis],
+                        #                              path=f"{path}_lr.png", vmin=vmin, vmax=vmax)
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=inv_visuals["INTERPOLATED"][:configs.n_val_vis],
+                        #                              path=f"{path}_interpolated.png", vmin=vmin, vmax=vmax)
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=construct_mask(residuals[:configs.n_val_vis]),
+                        #                              path=f"{path}_residual.png", vmin=-1, vmax=1,
+                        #                              costline_color="red", cmap="binary",
+                        #                              label="Signum(SR - HR)")
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=mean_candidate[:configs.n_val_vis],
+                        #                              path=f"{path}_mean_sr.png", vmin=vmin, vmax=vmax)
+                        # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
+                        #                              data=std_candidate[:configs.n_val_vis],
+                        #                              path=f"{path}_std_sr.png", vmin=0.0, cmap="Greens")
 
                         # tb_logger.add_scalar(f"mean_bias_over_pixels/val", mean_bias_over_pixels, current_step)
                         # tb_logger.add_scalar(f"std_bias_over_pixels/val", std_bias_over_pixels, current_step)

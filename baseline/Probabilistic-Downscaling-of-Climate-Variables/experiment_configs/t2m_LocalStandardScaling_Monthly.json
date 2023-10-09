@@ -31,7 +31,7 @@
         "unet": {
             "in_channel": 2,  // This should be equal to the number of variables * 2. Used in only networks.py 121 line.
             "out_channel": 1, // This should be equal to the number of variables.
-            "inner_channel": 32, // 32, 64
+            "inner_channel": 16, // 16, 32, 64
             "norm_groups": 8,  // 8, 16, 32
             "channel_multiplier": [1, 2, 4, 8],
             "attn_res": [8],  // Possible values are 128, 64, 32, 16, 8 and depends on channel_multipliers.
@@ -66,11 +66,11 @@
     },
     "training": {
         "epoch_n_iter": 20000,
-        "val_freq": 2000,
+        "val_freq": 20, // 2000
         "save_checkpoint_freq": 2000,
         "print_freq": 100,
         "n_val_vis": 1,
-        "val_vis_freq": 500,
+        "val_vis_freq": 10, // 500
         "sample_size": 5,
         "optimizer": {
             "type": "adam",  // Possible types are ['adam', 'adamw']

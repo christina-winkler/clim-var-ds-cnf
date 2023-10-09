@@ -334,8 +334,8 @@ class GaussianDiffusion(nn.Module):
         t = np.random.randint(1, self.num_timesteps + 1)  # Randomly sampling a diffusion timestep.
         continuous_sqrt_alpha_cumprod = torch.FloatTensor(np.random.uniform(self.sqrt_alphas_cumprod_prev[t-1],
                                                                             self.sqrt_alphas_cumprod_prev[t],
-                                                                            size=b)
-                                                          ).to(x_start.device)
+                                                                            size=b)).to(x_start.device)
+
         continuous_sqrt_alpha_cumprod = continuous_sqrt_alpha_cumprod.view(b, -1)
 
         if noise is None:
