@@ -1,5 +1,6 @@
 """The training script for DDPM model.
 """
+from datetime import datetime
 import argparse
 import logging
 import os
@@ -7,6 +8,8 @@ import pickle
 import warnings
 from collections import OrderedDict, defaultdict
 from data import dataloading
+import torchvision
+import matplotlib.pyplot as plt
 
 import numpy as np
 import torch
@@ -39,12 +42,22 @@ if __name__ == "__main__":
                         help="Dataset to train the model on.")
     parser.add_argument("--s", type=int, default=4, help="Upscaling factor.")
     parser.add_argument("--bsz", type=int, default=16, help="batch size")
+    parser.add_argument("--modeltype", type=str, default="cond_diffusion",
+                        help="Specify modeltype you would like to train [cond_diffusion].")
     args = parser.parse_args()
 
     configs = Config(args)
 
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+
     torch.backends.cudnn.enabled = True
     torch.backends.cudnn.benchmark = True
+
+    args.experiment_dir = os.path.join('runs',
+                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S"))
+    # set viz dir
+    viz_dir = "{}/snapshots/trainset/".format(args.experiment_dir)
+    os.makedirs(viz_dir, exist_ok=True)
 
     setup_logger(None, configs.log, "train", screen=True)
     setup_logger("val", configs.log, "val")
@@ -246,11 +259,45 @@ if __name__ == "__main__":
                                    mean_candidate[:configs.n_val_vis].max())
 
                         # Choosing the first n_val_vis number of samples to visualize.
-                        # TODO add in visualization code
-                        
 
+                        # Visualize low resolution GT
+                        grid_low_res = torchvision.utils.make_grid(visuals["LR"][0:9, :, :, :].cpu(), nrow=3)
+                        plt.figure()
+                        plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                        plt.axis('off')
+                        plt.title("Low-Res GT (train)")
+                        plt.show()
+                        plt.savefig(viz_dir + '/low_res_gt{}.png'.format(current_step), dpi=300, bbox_inches='tight')
+                        plt.close()
 
+                        grid_high_res_gt = torchvision.utils.make_grid(visuals["HR"][0:9, :, :, :].cpu(), nrow=3)
+                        plt.figure()
+                        plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                        plt.axis('off')
+                        plt.title("High-Res GT")
+                        plt.show()
+                        plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(current_step), dpi=300, bbox_inches='tight')
+                        plt.close()
 
+                         # Super-Resolving low-res
+                        grid_y_hat = torchvision.utils.make_grid(visuals["SR"][0:9, :, :, :].cpu(), nrow=3)
+                        plt.figure()
+                        plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                        plt.axis('off')
+                        plt.title("Y hat")
+                        plt.savefig(viz_dir + '/y_hat_mu08{}.png'.format(current_step), dpi=300,bbox_inches='tight')
+                        plt.show()
+                        plt.close()
+
+                        abs_err = torch.abs(visuals["SR"] - visuals["HR"])
+                        grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+                        plt.figure()
+                        plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                        plt.axis('off')
+                        plt.title("Abs Err")
+                        plt.savefig(viz_dir + '/abs_err_{}.png'.format(current_step), dpi=300,bbox_inches='tight')
+                        plt.show()
+                        plt.close()
 
                         # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,
                         #                              data=inv_visuals["HR"][:configs.n_val_vis],
