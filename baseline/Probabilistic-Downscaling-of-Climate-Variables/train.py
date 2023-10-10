@@ -266,7 +266,7 @@ if __name__ == "__main__":
                         plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
                         plt.axis('off')
                         plt.title("Low-Res GT (train)")
-                        plt.show()
+                        # plt.show()
                         plt.savefig(viz_dir + '/low_res_gt{}.png'.format(current_step), dpi=300, bbox_inches='tight')
                         plt.close()
 
@@ -275,7 +275,7 @@ if __name__ == "__main__":
                         plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
                         plt.axis('off')
                         plt.title("High-Res GT")
-                        plt.show()
+                        # plt.show()
                         plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(current_step), dpi=300, bbox_inches='tight')
                         plt.close()
 
@@ -286,7 +286,7 @@ if __name__ == "__main__":
                         plt.axis('off')
                         plt.title("Y hat")
                         plt.savefig(viz_dir + '/y_hat_mu08{}.png'.format(current_step), dpi=300,bbox_inches='tight')
-                        plt.show()
+                        # plt.show()
                         plt.close()
 
                         abs_err = torch.abs(visuals["SR"] - visuals["HR"])
@@ -296,7 +296,7 @@ if __name__ == "__main__":
                         plt.axis('off')
                         plt.title("Abs Err")
                         plt.savefig(viz_dir + '/abs_err_{}.png'.format(current_step), dpi=300,bbox_inches='tight')
-                        plt.show()
+                        # plt.show()
                         plt.close()
 
                         # construct_and_save_wbd_plots(latitude=metadata.hr_lat, longitude=metadata.hr_lon,

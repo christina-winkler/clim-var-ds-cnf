@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 class MinMaxScaler:
     max_value: float
     min_value: float
-    values_range: Tuple[int, int] = (-1, 1)
+    values_range: Tuple[int, int] = (0, 1)
 
     def __call__(self, x):
         x = (x - self.min_value) / (self.max_value - self.min_value)

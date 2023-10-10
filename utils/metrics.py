@@ -133,7 +133,7 @@ def euclidean_distances(x, y, squared=False):
 def crps_ensemble(observation, forecasts):
     # explanation: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003120
     # forceasts contains n predicted frames
-    _,_,h,w=observation.shape
+    _,_,h,w = observation.shape
     observation = observation.detach().cpu().numpy()
     forecasts = forecasts.detach().cpu().numpy()
 

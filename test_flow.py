@@ -100,11 +100,6 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 
 args = parser.parse_args()
 
-def inv_scaler_temp(x):
-    max_value = 315.91873
-    min_value = 241.22385
-    return x * (max_value - min_value) + min_value
-
 def inv_scaler(x, ref=None):
     min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
     max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
@@ -398,7 +393,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visualize low resolution GT
             grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("Low-Res GT (train)")
             # plt.show()
@@ -408,7 +403,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visualize High-Res GT
             grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("High-Res GT")
             # plt.show()
@@ -417,7 +412,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0")
             plt.savefig(savedir_viz + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
@@ -425,7 +420,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0.5")
             plt.savefig(savedir_viz + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
@@ -433,7 +428,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=0.8")
             plt.savefig(savedir_viz + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
@@ -441,7 +436,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
             # plt.title("Prediction at t (test), mu=1.0")
             plt.savefig(savedir_viz + "mu_1_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
@@ -450,7 +445,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             abs_err = torch.abs(mu08 - y)
             grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
             plt.figure()
-            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=color, vmin=args.vminmax[0], vmax=args.vminmax[1])
+            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
             # plt.title("Abs Err")
             plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
@@ -651,7 +646,6 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
 
-
 if __name__ == "__main__":
 
     print(torch.cuda.device_count())
@@ -673,8 +667,8 @@ if __name__ == "__main__":
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_0_step_250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_06_12_42_11/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_1_step_38250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_09_17_35_532x/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling
     # modelname = 'model_epoch_2_step_27000'
@@ -694,7 +688,7 @@ if __name__ == "__main__":
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
     # plot_std(model, test_loader, exp_name, modelname, args)
-    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    test(model, test_loader, exp_name, modelname, -99999, args)
+    # test(model, test_loader, exp_name, modelname, -99999, args)
