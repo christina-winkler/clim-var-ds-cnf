@@ -32,18 +32,6 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
-class SoftmaxConstraints(nn.Module):
-    # taken from: https://github.com/RolnickLab/constrained-downscaling/blob/main/models.py
-    def __init__(self, upsampling_factor, exp_factor=1):
-        super(SoftmaxConstraints, self).__init__()
-        self.upsampling_factor = upsampling_factor
-        self.pool = torch.nn.AvgPool2d(kernel_size=upsampling_factor)
-    def forward(self, y, lr):
-        y = torch.exp(y)
-        sum_y = self.pool(y)
-        out = y*torch.kron(lr*1/sum_y, torch.ones((self.upsampling_factor,self.upsampling_factor)).to('cuda'))
-        return out
-
 class MinMaxScaler:
     def __call__(self, x, max_value, min_value):
         values_range: Tuple[int, int] = (-1, 1)

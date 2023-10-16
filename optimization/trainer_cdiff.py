@@ -37,12 +37,17 @@ def trainer(args, train_loader, valid_loader, model,
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
     config_dict = vars(args)
 
-    # write config dict to file
-
-
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
                                         args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S"))
+    os.makedirs(args.experiment_dir, exist_ok=True)
+    config_dict = vars(args)
+    with open(args.experiment_dir + '/configs.txt', 'w') as f:
+        for key, value in config_dict.items():
+            f.write('%s:%s\n' % (key, value))
+
     # set viz dir
     viz_dir = "{}/snapshots/trainset/".format(args.experiment_dir)
     os.makedirs(viz_dir, exist_ok=True)
+
+    # TODO: noise schedule

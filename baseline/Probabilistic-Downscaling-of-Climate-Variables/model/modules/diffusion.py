@@ -90,6 +90,7 @@ class GaussianDiffusion(nn.Module):
     def __init__(self, denoise_net: nn.Module,
                  loss_type: str = "l2", conditional: bool = True):
         super().__init__()
+        
         self.denoise_net = denoise_net
         self.loss_type = loss_type
         self.conditional = conditional

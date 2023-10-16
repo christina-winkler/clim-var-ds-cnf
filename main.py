@@ -16,6 +16,7 @@ import os
 # Models
 from models.architectures import stflow
 from models.architectures import srflow
+from models.architectures import cdiff
 
 # Optimization
 from optimization import trainer_stflow
@@ -83,6 +84,21 @@ def main(args):
                                model=model,
                                device=args.device)
 
+    if args.modeltype == "cdiff":
+
+        model = cdiff.CondDiffusion((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
+                                     args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+
+        if args.resume:
+            modelname = 'model_epoch_1_step_53000.tar'
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
+            ckpt = torch.load(modelpath)
+            model.load_state_dict(ckpt['model_state_dict'])
+
+        trainer_srflow.trainer(args=args, train_loader=train_loader,
+                               valid_loader=valid_loader,
+                               model=model,
+                               device=args.device)
 
     if args.modeltype == "stflow":
 
@@ -109,8 +125,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # train configs
-    parser.add_argument("--modeltype", type=str, default="srflow",
-                        help="Specify modeltype you would like to train [flow, diff, unet3d, convLSTM].")
+    parser.add_argument("--modeltype", type=str, default="cdiff",
+                        help="Specify modeltype you would like to train [srflow, cdiff, stflow].")
     parser.add_argument("--model_path", type=str, default="runs/",
                         help="Directory where models are saved.")
     parser.add_argument("--modelname", type=str, default=None,
