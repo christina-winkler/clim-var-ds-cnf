@@ -90,7 +90,7 @@ class GaussianDiffusion(nn.Module):
     def __init__(self, denoise_net: nn.Module,
                  loss_type: str = "l2", conditional: bool = True):
         super().__init__()
-        
+
         self.denoise_net = denoise_net
         self.loss_type = loss_type
         self.conditional = conditional
@@ -312,7 +312,7 @@ class GaussianDiffusion(nn.Module):
             noise = torch.randn_like(x_start)
         return continuous_sqrt_alpha_cumprod * x_start + (1 - continuous_sqrt_alpha_cumprod**2).sqrt() * noise
 
-    def p_losses(self, x_in: dict, noise: torch.Tensor = None) -> torch.Tensor:
+    def p_losses(self, x_in: dict, noise: torch.Tensor=None) -> torch.Tensor:
         """Computes loss function.
 
         Args:

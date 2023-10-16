@@ -115,11 +115,6 @@ def trainer(args, train_loader, valid_loader, model,
             # reverse loss
             y_hat, logdet, logpz = model(xlr=x, reverse=True)
 
-            # apply softmax constraint
-            # out = SC(inv_scaler(y_hat,y), x_unnorm)
-            # scaler = MinMaxScaler()
-            # out_scaled = scaler(out, max_value=out.max(), min_value=out.min())
-
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 

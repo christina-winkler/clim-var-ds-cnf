@@ -19,8 +19,7 @@ from models.architectures import srflow
 from models.architectures import cdiff
 
 # Optimization
-from optimization import trainer_stflow
-from optimization import trainer_srflow
+from optimization import trainer_stflow,trainer_cdiff, trainer_srflow
 
 # import evaluate
 import test
@@ -65,13 +64,13 @@ def main(args):
         # load data
         train_loader, valid_loader, test_loader, args = dataloading.load_data(args)
         in_channels = next(iter(test_loader))[0].shape[1]
-        args.height, args.width = next(iter(train_loader))[0].shape[2], next(iter(train_loader))[0].shape[3]
+        height, width = next(iter(train_loader))[0].shape[2], next(iter(train_loader))[0].shape[3]
 
     print("Start training {} on {}:".format(args.modeltype, args.trainset))
 
     if args.modeltype == "srflow":
 
-        model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
+        model = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
                                args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
@@ -86,8 +85,10 @@ def main(args):
 
     if args.modeltype == "cdiff":
 
-        model = cdiff.CondDiffusion((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
-                                     args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+        model = cdiff.CondDiffusion((in_channels, height, width),
+                                     args.bsz, args.s, args.nb, args.condch,
+                                     args.train, args.device,
+                                     args.noise_sched, args.gauss_steps)
 
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
@@ -95,10 +96,10 @@ def main(args):
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
-        trainer_srflow.trainer(args=args, train_loader=train_loader,
-                               valid_loader=valid_loader,
-                               model=model,
-                               device=args.device)
+        trainer_cdiff.trainer(args=args, train_loader=train_loader,
+                              valid_loader=valid_loader,
+                              model=model,
+                              device=args.device)
 
     if args.modeltype == "stflow":
 
@@ -158,6 +159,10 @@ if __name__ == "__main__":
     parser.add_argument("--nbits", type=int, default=8,
                         help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
+    parser.add_argument("--gauss_steps", type=int, default=2000,
+                        help="Number of gaussianization steps in diffusion process.")
+    parser.add_argument("--noise_sched", type=str, default='cosine',
+                        help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
     parser.add_argument("--crop_size", type=int, default=500,
                         help="Crop size when random cropping is applied.")
     parser.add_argument("--patch_size", type=int, default=500,
@@ -174,6 +179,10 @@ if __name__ == "__main__":
                         help="# of residual-in-residual blocks LR network.")
     parser.add_argument("--condch", type=int, default=128//8,
                         help="# of residual-in-residual blocks in LR network.")
+    parser.add_argument("--linear_start", type=float, default=1e-6,
+                        help="Minimum value of the linear schedule (for diffusion model).")
+    parser.add_argument("--linear_end", type=float, default=1e-2,
+                        help="Maximum value of the linear schedule (for diffusion model).")
 
     # data
     parser.add_argument("--datadir", type=str, default="data",

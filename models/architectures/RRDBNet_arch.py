@@ -57,7 +57,7 @@ class RRDBNet(nn.Module):
     def __init__(self, in_nc, cond_channels, nb, s, input_shape, gc=32):
         super(RRDBNet, self).__init__()
         RRDB_block_f = functools.partial(RRDB, nf=cond_channels, gc=gc)
-        (c, w, h) = input_shape
+
         self.conv_first = nn.Conv2d(in_nc, cond_channels, 3, 1, 1, bias=True)
         self.RRDB_trunk = make_layer(RRDB_block_f, nb)
         self.trunk_conv = nn.Conv2d(cond_channels, cond_channels, 3, 1, 1, bias=True)
@@ -77,9 +77,7 @@ class RRDBNet(nn.Module):
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 
-        fea = self.lrelu(
-            self.upconv1(F.interpolate(fea, scale_factor=self.s, mode="nearest"))
-        )
+        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=self.s, mode="nearest")))
         # fea = self.lrelu(self.upconv2(F.interpolate(fea, scale_factor=self.s, mode='nearest')))
         out = self.conv_last(self.lrelu(self.HRconv(fea)))
 
