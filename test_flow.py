@@ -8,6 +8,7 @@ import torchvision
 from torchvision import transforms
 from ignite.metrics import PSNR
 import matplotlib as mpl
+from mpl_toolkits.axes_grid1 import make_axes_locatable
 import pandas as pd
 import sys
 sys.path.append("../../")
@@ -100,9 +101,10 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 
 args = parser.parse_args()
 
-def inv_scaler(x, ref=None):
-    min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
-    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+def inv_scaler(x, min_value=0, max_value=100):
+    print(min_value, max_value)
+    # min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    # max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
     return x * (max_value - min_value) + min_value
 
 def plot_std(model, test_loader, exp_name, modelname, args):
@@ -155,24 +157,46 @@ def plot_std(model, test_loader, exp_name, modelname, args):
             fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,7)
             # fig.suptitle('Y, Y_hat, mu, sigma')
             ax1.imshow(y[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax1)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax1.set_title('Ground Truth', fontsize=5)
             ax1.axis('off')
             ax2.imshow(mu0[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax2)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax2.set_title('Mean', fontsize=5)
             ax2.axis('off')
             ax3.imshow(samples[1][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax3)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax3.set_title('Sample 1', fontsize=5)
             ax3.axis('off')
             ax4.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax4)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax4.set_title('Sample 2', fontsize=5)
             ax4.axis('off')
             ax5.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax5)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax5.set_title('Sample 3', fontsize=5)
             ax5.axis('off')
             ax6.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            divider = make_axes_locatable(ax6)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
             ax6.set_title('Sample 4', fontsize=5)
             ax6.axis('off')
-            ax7.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap='magma')
+            divider = make_axes_locatable(ax7)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            im7 = ax7.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap='magma')
+            cbar = fig.colorbar(im7,cmap='magma', cax=cax)
+            cbar.ax.tick_params(labelsize=5)
             ax7.set_title('Std. Dev.', fontsize=5)
             ax7.axis('off')
             plt.tight_layout()
@@ -270,7 +294,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             print("Evaluate Predictions on visual metrics... ")
 
             # SSIM
-            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0,y_unnorm), y_unnorm)
+            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0), y_unnorm)
             print('Current SSIM', current_ssim_mu0.item())
             ssim0.append(current_ssim_mu0.cpu().numpy())
             pd.Series(ssim0).hist()
@@ -279,17 +303,17 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05,y_unnorm), y_unnorm)
+            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05), y_unnorm)
             ssim05.append(current_ssim_mu05.cpu())
 
-            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08,y_unnorm), y_unnorm)
+            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08), y_unnorm)
             ssim08.append(current_ssim_mu08.cpu())# = list(map(add, current_ssim_mu08, ssim08))
 
-            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1,y_unnorm), y_unnorm)
+            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1), y_unnorm)
             ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
 
             # PSNR
-            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0,y_unnorm), y_unnorm)
+            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0), y_unnorm)
             # current_psnr_mu0 = metrics.psnr(mu0, y)
             psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
             print('Current PSNR', current_psnr_mu0)
@@ -300,20 +324,20 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05,y_unnorm), y_unnorm)
+            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05), y_unnorm)
             # current_psnr_mu05 = metrics.psnr(mu05, y)
             psnr05.append(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
 
             # current_psnr_mu08 = metrics.psnr(mu08, y)
-            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08,y_unnorm), y_unnorm)
+            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08), y_unnorm)
             psnr08.append(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
 
             # current_psnr_mu1 = metrics.psnr(mu1, y)
-            current_psnr_mu1 = metrics.psnr(inv_scaler(mu1, y_unnorm), y_unnorm)
+            current_psnr_mu1 = metrics.psnr(inv_scaler(mu1), y_unnorm)
             psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            current_mse0 = metrics.MSE(inv_scaler(mu0,y_unnorm), y_unnorm).detach().cpu().numpy()
+            current_mse0 = metrics.MSE(inv_scaler(mu0), y_unnorm).detach().cpu().numpy()
             # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
             mse0 = list(map(add, current_mse0, mse0))
             print('Current MSE', current_psnr_mu0.item())
@@ -328,7 +352,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
-            current_mae0 = metrics.MAE(inv_scaler(mu0,y_unnorm),y_unnorm).detach().cpu().numpy()
+            current_mae0 = metrics.MAE(inv_scaler(mu0),y_unnorm).detach().cpu().numpy()
             # current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
             mae0.append(current_mae0) # = list(map(add, current_mae0.cpu().numpy(), mae0))
             print('Current MAE', current_mae0.item())
@@ -364,22 +388,22 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
             # MMD
-            current_mmd0 = metrics.MMD(inv_scaler(mu0,y_unnorm),y_unnorm)
+            current_mmd0 = metrics.MMD(inv_scaler(mu0),y_unnorm)
             mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
 
-            current_mmd05 = metrics.MMD(inv_scaler(mu05,y_unnorm),y_unnorm)
+            current_mmd05 = metrics.MMD(inv_scaler(mu05),y_unnorm)
             mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
 
-            current_mmd08 = metrics.MMD(inv_scaler(mu08,y_unnorm),y_unnorm)
+            current_mmd08 = metrics.MMD(inv_scaler(mu08),y_unnorm)
             mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
 
-            current_mmd1 = metrics.MMD(inv_scaler(mu1,y_unnorm),y_unnorm)
+            current_mmd1 = metrics.MMD(inv_scaler(mu1),y_unnorm)
             mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
             crps = []
             for i in range(8):
                 currmu, _, _ = model(xlr=x, reverse=True, eps=1.0)
-                crps.append(inv_scaler(currmu,y_unnorm))
+                crps.append(inv_scaler(currmu))
 
             mu0crps = torch.stack(crps, dim=1)
 
@@ -584,7 +608,7 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
     """
     For this experiment we visualize the pixel distribution of the normalized
     and unnormalized counterpart images of the ground truth and the predicted
-    super-resolved image to assess the calibration.
+    super-resolved image to assess model calibration.
     """
 
     savedir_viz = "experiments/{}_{}_{}/snapshots/calibration_histograms/".format(exp_name, modelname, args.trainset)
@@ -610,22 +634,23 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
 
             colors = ['mediumorchid', 'coral']
 
-            labelax0 = [r'$\tilde{y}$',r'$\tilde{\hat{y}}$']
+            labelax0 = [r'Ground Truth',r'Prediction']
             y_fl = y.flatten().detach().cpu().numpy()
             mu05_fl = mu05.flatten().detach().cpu().numpy()
             ax0.hist(np.stack((y_fl, mu05_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax0)
-            ax0.set_xlabel('nr of bins')
-            ax0.set_ylabel('pixel values')
+            ax0.set_xlabel('pixel values')
+            ax0.set_ylabel('normalized ensity')
             ax0.set_title('Normalized prediction vs. ground truth pixel distribution')
             ax0.legend(prop={'size': 10})
 
-            labelax1 = ['y',r'$\hat{y}$']
-            mu05_unorm = inv_scaler(mu05, ref=y_unorm)
+            labelax1 = ['Ground Truth', r'Prediction']
+            mu05_unorm = inv_scaler(mu05, y_unorm.min(), y_unorm.max())
+            # y_unorm = inv_scaler(y, y_unorm.min(), y_unorm.max())
             y_unorm_fl = y_unorm.flatten().detach().cpu().numpy()
             mu05_unorm_fl = mu05_unorm.flatten().detach().cpu().numpy()
             ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
-            ax1.set_xlabel('nr of bins')
-            ax1.set_ylabel('pixel values')
+            ax1.set_xlabel('pixel values')
+            ax1.set_ylabel('unormalized density')
             ax1.set_title('Unormalized prediction vs. ground truth pixel distribution')
             ax1.legend(prop={'size': 10})
 
@@ -644,7 +669,6 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
 
             fig.savefig(savedir_viz + '/histogram_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
-
 
 if __name__ == "__main__":
 
@@ -667,8 +691,8 @@ if __name__ == "__main__":
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_1_step_38250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_09_17_35_532x/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_1_step_25000'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_10_17_06_05/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling
     # modelname = 'model_epoch_2_step_27000'
@@ -687,8 +711,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    # plot_std(model, test_loader, exp_name, modelname, args)
-    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    plot_std(model, test_loader, exp_name, modelname, args)
+    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
     # test(model, test_loader, exp_name, modelname, -99999, args)
