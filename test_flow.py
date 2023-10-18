@@ -102,10 +102,12 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 args = parser.parse_args()
 
 def inv_scaler(x, min_value=0, max_value=100):
-    print(min_value, max_value)
+    values_range = (-1, 1)
     # min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
     # max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
-    return x * (max_value - min_value) + min_value
+    x = x * (max_value - min_value) + min_value
+    # return
+    return x
 
 def plot_std(model, test_loader, exp_name, modelname, args):
     """
@@ -711,8 +713,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    plot_std(model, test_loader, exp_name, modelname, args)
-    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    # plot_std(model, test_loader, exp_name, modelname, args)
+    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
     # test(model, test_loader, exp_name, modelname, -99999, args)

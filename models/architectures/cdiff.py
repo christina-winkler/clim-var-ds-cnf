@@ -74,6 +74,7 @@ class CondDiffusion(nn.Module):
 
         c,w,h = input_shape
         self.T = T # gaussianization steps
+        print(self.T, 'gaussiii stepsch')
         self.noise_sched = noise_sched
         self.linear_start = linear_start
         self.linear_end = linear_end

@@ -42,7 +42,7 @@ def inv_scaler(x):
     min_value = 0
     max_value = 100
     return x * (max_value - min_value) + min_value
-    
+
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
 
@@ -139,8 +139,10 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                     # Super-Resolving low-res
-                    # import pdb; pdb.set_trace()
-                    y_hat = model.super_resolution(x[0,...].unsqueeze(0))
+                    start = timeit.default_timer()
+                    y_hat = model.super_resolution(x)
+                    stop = timeit.default_timer()
+                    print("Time Fwd pass:", stop-start)
                     print(y_hat.max(), y_hat.min(), y.max(), y.min())
                     grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()

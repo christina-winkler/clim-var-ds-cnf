@@ -85,10 +85,11 @@ def main(args):
 
     if args.modeltype == "cdiff":
 
-        model = cdiff.CondDiffusion((in_channels, height, width),
-                                     args.bsz, args.s, args.nb, args.condch,
-                                     args.train, args.device,
-                                     args.noise_sched, args.gauss_steps)
+        model = cdiff.CondDiffusion(input_shape=(in_channels, height, width),
+                                    bsz=args.bsz, s=args.s, nb=args.nb, cond_channels=args.condch,
+                                    trainmode=args.train, device=args.device,
+                                    conditional=True, linear_start=1e-6, linear_end=1e-2,
+                                    noise_sched=args.noise_sched, T=args.gauss_steps)
 
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
@@ -159,7 +160,7 @@ if __name__ == "__main__":
     parser.add_argument("--nbits", type=int, default=8,
                         help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
-    parser.add_argument("--gauss_steps", type=int, default=2000,
+    parser.add_argument("--gauss_steps", type=int, default=100,
                         help="Number of gaussianization steps in diffusion process.")
     parser.add_argument("--noise_sched", type=str, default='cosine',
                         help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
