@@ -364,6 +364,8 @@ class UNet(nn.Module):
         t = self.time_embedding(time) if self.time_embedding else None  # [B, 1, D]
         feats = []
 
+
+
         for layer in self.downs:
             x = layer(x, t) if isinstance(layer, ResnetBlocWithAttn) else layer(x)
             feats.append(x)

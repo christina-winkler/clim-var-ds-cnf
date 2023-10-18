@@ -17,6 +17,7 @@ from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
 from optimization.validation_cdiff import validate
 from typing import Tuple, Callable
+import timeit
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
@@ -31,6 +32,17 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+class MinMaxScaler:
+    def __call__(self, x, max_value, min_value):
+        values_range: Tuple[int, int] = (-1, 1)
+        x = (x - min_value) / (max_value - min_value)
+        return x * (values_range[1] - values_range[0]) + values_range[0]
+
+def inv_scaler(x):
+    min_value = 0
+    max_value = 100
+    return x * (max_value - min_value) + min_value
+    
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
 
@@ -86,5 +98,65 @@ def trainer(args, train_loader, valid_loader, model,
             optimizer.zero_grad()
 
             loss = model(y,x)
+            loss.mean().backward()
 
-            
+            # Update model parameters using calculated gradients
+            optimizer.step()
+            scheduler.step()
+            step = step + 1
+
+            print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, MSE Loss {:.3f}".format(
+                    datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    epoch, step,
+                    args.max_steps,
+                    args.bsz,
+                    loss.mean()))
+
+            if step % args.log_interval == 0:
+
+                with torch.no_grad():
+
+                    model.eval()
+
+                    # Visualize low resolution GT
+                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
+                    plt.figure()
+                    plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.axis('off')
+                    plt.title("Low-Res GT (train)")
+                    # plt.show()
+                    plt.savefig(viz_dir + '/low_res_gt{}.png'.format(step), dpi=300, bbox_inches='tight')
+                    plt.close()
+
+                    # Visualize High-Res GT
+                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
+                    plt.figure()
+                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.axis('off')
+                    plt.title("High-Res GT")
+                    # plt.show()
+                    plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(step), dpi=300, bbox_inches='tight')
+                    plt.close()
+
+                    # Super-Resolving low-res
+                    # import pdb; pdb.set_trace()
+                    y_hat = model.super_resolution(x[0,...].unsqueeze(0))
+                    print(y_hat.max(), y_hat.min(), y.max(), y.min())
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
+                    plt.figure()
+                    plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.axis('off')
+                    plt.title("Y hat")
+                    plt.savefig(viz_dir + '/y_hat_mu08_{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    # plt.show()
+                    plt.close()
+
+                    abs_err = torch.abs(y_hat - y)
+                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+                    plt.figure()
+                    plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.axis('off')
+                    plt.title("Abs Err")
+                    plt.savefig(viz_dir + '/abs_err_{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    # plt.show()
+                    plt.close()

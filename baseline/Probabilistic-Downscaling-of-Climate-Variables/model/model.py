@@ -289,7 +289,7 @@ class DDPM(BaseModel):
         for key, param in state_dict.items():
             state_dict[key] = param.cpu()
         torch.save(state_dict, gen_path)
-        import pdb; pdb.set_trace()
+
         opt_state = {"epoch": epoch, "iter": iter_step,
                      "scheduler": self.scheduler.state_dict(),
                      "optimizer": self.optimizer.state_dict()}

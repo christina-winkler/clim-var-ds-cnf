@@ -370,6 +370,7 @@ class UNet(nn.Module):
         for layer in self.mid:
             x = layer(x, t) if isinstance(layer, ResnetBlocWithAttn) else layer(x)
 
+        import pdb; pdb.set_trace()
         for layer in self.ups:
             x = layer(torch.cat((x, feats.pop()), dim=1), t) if isinstance(layer, ResnetBlocWithAttn) else layer(x)
 

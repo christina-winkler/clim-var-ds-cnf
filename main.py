@@ -132,7 +132,7 @@ if __name__ == "__main__":
                         help="Directory where models are saved.")
     parser.add_argument("--modelname", type=str, default=None,
                         help="Sepcify modelname to be tested.")
-    parser.add_argument("--epochs", type=int, default=10000,
+    parser.add_argument("--epochs", type=int, default=20000,
                         help="number of epochs")
     parser.add_argument("--max_steps", type=int, default=2000000,
                         help="For training on a large dataset.")

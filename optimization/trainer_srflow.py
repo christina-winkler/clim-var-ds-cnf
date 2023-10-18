@@ -38,9 +38,9 @@ class MinMaxScaler:
         x = (x - min_value) / (max_value - min_value)
         return x * (values_range[1] - values_range[0]) + values_range[0]
 
-def inv_scaler(x, ref=None):
-    min_value = 0 #ref.min()
-    max_value = 100 # ref.max()
+def inv_scaler(x):
+    min_value = 0
+    max_value = 100
     return x * (max_value - min_value) + min_value
 
 def trainer(args, train_loader, valid_loader, model,

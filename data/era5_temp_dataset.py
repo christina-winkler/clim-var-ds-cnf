@@ -31,7 +31,7 @@ class MinMaxScaler:
 class InverseMinMaxScaler:
     max_value: float = 315.91873
     min_value: float = 241.22385
-    values_range: Tuple[int, int] = (0, 1)
+    values_range: Tuple[int, int] = (-1, 1)
 
     def __call__(self, y):
         x = y * (self.max_value - self.min_value) + self.min_value
