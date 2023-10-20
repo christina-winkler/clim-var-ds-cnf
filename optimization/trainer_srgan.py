@@ -163,7 +163,8 @@ def trainer(args, train_loader, valid_loader, model,
             g_loss = generator_criterion(fake_out, fake_img, y)
             g_loss.backward()
             optimizerG.step()
-
+            
+            step = step + 1
             print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, Gen Loss {:.3f}, Disc Loss: {:.3f}".format(
                     datetime.now().strftime("%Y-%m-%d %H:%M"),
                     epoch, step,
@@ -244,9 +245,14 @@ def trainer(args, train_loader, valid_loader, model,
                     PATH = args.experiment_dir + '/model_checkpoints/'
                     os.makedirs(PATH, exist_ok=True)
                     torch.save({'epoch': epoch,
-                                'model_state_dict': model.state_dict(),
-                                'optimizer_state_dict': optimizer.state_dict(),
-                                'loss': loss_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
+                                'model_state_dict': generator.state_dict(),
+                                'optimizer_state_dict': optimizerG.state_dict(),
+                                'loss': loss_valid.mean()}, PATH+ f"generator_epoch_{epoch}_step_{step}.tar")
+
+                    torch.save({'epoch': epoch,
+                                'model_state_dict': discriminator.state_dict(),
+                                'optimizer_state_dict': optimizerD.state_dict(),
+                                'loss': loss_valid.mean()}, PATH+ f"discriminator_epoch_{epoch}_step_{step}.tar")
                     prev_loss_epoch = loss_valid
 
             logging_step += 1
