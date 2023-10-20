@@ -222,7 +222,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.axis('off')
                     plt.title("Abs Err")
                     plt.savefig(viz_dir + '/abs_err_{}.png'.format(step), dpi=300,bbox_inches='tight')
-                    plt.show()
+                    # plt.show()
                     plt.close()
 
             if step % args.val_interval == 0:

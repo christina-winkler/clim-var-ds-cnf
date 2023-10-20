@@ -113,5 +113,13 @@ def validate(model, val_loader, exp_name, logstep, args):
         plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
         plt.close()
 
+        metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y_unorm).mean())
+        metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y_unorm).mean())
+        metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y_unorm).mean())
+        print(metric_dict)
+        with open(viz_dir + '/metric_dict.txt', 'w') as f:
+            for key, value in metric_dict.items():
+                f.write('%s:%s\n' % (key, value))
+
     print("Average Validation Neg. Log Probability Mass:", np.mean(nll_list))
-    return np.mean(nll_list)
+    return metric_dict, np.mean(nll_list)

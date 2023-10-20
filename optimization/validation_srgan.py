@@ -71,13 +71,15 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     discriminator.eval()
     generator.eval()
 
+    generator_criterion = GeneratorLoss(generator)
+
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            y = Variable(item[0].to(device))
-            x = Variable(item[1].to(device))
-            y_unorm = item[2].to(device)
-            x_unorm = item[3].to(device)
+            y = Variable(item[0].to(args.device))
+            x = Variable(item[1].to(args.device))
+            y_unorm = item[2].to(args.device).squeeze(1)
+            x_unorm = item[3].to(args.device).squeeze(1)
 
             generator.zero_grad()
             fake_img=generator(x)
@@ -93,9 +95,6 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
 
             if batch_idx == 1:
                 break
-
-            # evaluate for different temperatures TODO: adapt
-            y_hat = model.super_resolution(x)
 
             viz_dir = "{}/snapshots/validationset/".format(exp_name)
             os.makedirs(viz_dir, exist_ok=True)
@@ -122,7 +121,7 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
 
             # Super-Resolving low-res
             start = timeit.default_timer()
-            y_hat = model.super_resolution(x)
+            y_hat=generator(x)
             stop = timeit.default_timer()
             print("Time Fwd pass:", stop-start)
             print(y_hat.max(), y_hat.min(), y.max(), y.min())
@@ -131,7 +130,7 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
             plt.axis('off')
             plt.title("Y hat")
-            plt.savefig(viz_dir + '/y_hat_mu08_{}.png'.format(batch_idx), dpi=300,bbox_inches='tight')
+            plt.savefig(viz_dir + '/y_hat_{}.png'.format(batch_idx), dpi=300,bbox_inches='tight')
             # plt.show()
             plt.close()
 
@@ -145,9 +144,9 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             # plt.show()
             plt.close()
 
-            metric_dict['MSE'].append(metrics.MAE(inv_scaler(y_hat, args).mean(), y_unorm))
-            metric_dict['MAE'].append(metrics.MSE(inv_scaler(y_hat, args).mean(), y_unorm))
-            metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args).mean(), y_unorm))
+            metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y_unorm).mean())
+            metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y_unorm).mean())
+            metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y_unorm).mean())
             print(metric_dict)
             with open(viz_dir + '/metric_dict.txt', 'w') as f:
                 for key, value in metric_dict.items():
