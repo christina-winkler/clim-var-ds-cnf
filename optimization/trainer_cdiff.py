@@ -63,13 +63,15 @@ def trainer(args, train_loader, valid_loader, model,
     os.makedirs(viz_dir, exist_ok=True)
 
     writer = SummaryWriter("{}".format(args.experiment_dir))
-    prev_nll_epoch = np.inf
+    prev_loss_epoch = np.inf
     logging_step = 0
     step = 0
     optimizer = optim.Adam(model.parameters(), lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=2 * 10 ** 5,
                                                 gamma=0.5)
+
+    metric_dict = {'MSE': [], 'RMSE': [], 'MAE': []}
 
     model.to(device)
 
@@ -131,7 +133,8 @@ def trainer(args, train_loader, valid_loader, model,
                     # Visualize High-Res GT
                     grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
                     plt.figure()
-                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.imshow(grid_high_res_gt.permute(
+                    1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("High-Res GT")
                     # plt.show()
@@ -149,7 +152,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Y hat")
-                    plt.savefig(viz_dir + '/y_hat_mu08_{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300,bbox_inches='tight')
                     # plt.show()
                     plt.close()
 
@@ -162,3 +165,50 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.savefig(viz_dir + '/abs_err_{}.png'.format(step), dpi=300,bbox_inches='tight')
                     # plt.show()
                     plt.close()
+
+            if step % args.val_interval == 0:
+                print('Validating model ... ')
+                model.set_new_noise_schedule(schedule=args.noise_sched, n_timestep=args.gauss_steps,
+                                             linear_start=args.linear_start, linear_end=args.linear_end, device=args.device)
+
+                loss_valid, metric_dict = validate(model,
+                                      valid_loader,
+                                      metric_dict,
+                                      args.experiment_dir,
+                                      "{}".format(step),
+                                      args)
+
+                writer.add_scalar("loss_valid",
+                                  loss_valid.mean().item(),
+                                  logging_step)
+
+                # save checkpoint only when nll lower than previous model
+                if loss_valid < prev_loss_epoch:
+                    PATH = args.experiment_dir + '/model_checkpoints/'
+                    os.makedirs(PATH, exist_ok=True)
+                    torch.save({'epoch': epoch,
+                                'model_state_dict': model.state_dict(),
+                                'optimizer_state_dict': optimizer.state_dict(),
+                                'loss': loss_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
+                    prev_loss_epoch = loss_valid
+
+            logging_step += 1
+
+            if step == args.max_steps:
+                break
+
+        if step == args.max_steps:
+        #     print("Done Training for {} mini-batch update steps!".format(args.max_steps)
+        #     )
+        #
+        #     if hasattr(model, "module"):
+        #         model_without_dataparallel = model.module
+        #     else:
+        #         model_without_dataparallel = model
+
+            utils.save_model(model,
+                             epoch, optimizer, args, time=True)
+
+            print("Saved trained model :)")
+            wandb.finish()
+            break

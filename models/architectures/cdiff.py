@@ -52,7 +52,6 @@ def make_beta_schedule(schedule: str, n_timestep: int, linear_start: float = 1e-
         betas = 1. / np.linspace(n_timestep,
                                  1, n_timestep, dtype=np.float64)
     elif schedule == "cosine":  # Cosine beta schedule [formula 17, arxiv:2102.09672].
-        # import pdb; pdb.set_trace()
         timesteps = (torch.arange(n_timestep + 1, dtype=torch.float64) / n_timestep + cosine_s)
         alphas = timesteps / (1 + cosine_s) * math.pi / 2
         alphas = torch.cos(alphas).pow(2)
@@ -74,7 +73,6 @@ class CondDiffusion(nn.Module):
 
         c,w,h = input_shape
         self.T = T # gaussianization steps
-        print(self.T, 'gaussiii stepsch')
         self.noise_sched = noise_sched
         self.linear_start = linear_start
         self.linear_end = linear_end
@@ -294,10 +292,6 @@ class CondDiffusion(nn.Module):
 
         # uniformly sample gaussianization time-step
         t = np.random.randint(1, self.T + 1)
-
-        # get betas determining variance of noise added at each diffusion step
-        betas = make_beta_schedule(schedule=self.noise_sched, n_timestep=self.T,
-                                   linear_start=self.linear_start, linear_end=self.linear_end)
 
         # Sample gammas from piece-wise uniform distribution
         continuous_sqrt_alpha_cumprod = torch.FloatTensor(np.random.uniform(self.sqrt_alphas_cumprod_prev[t-1],

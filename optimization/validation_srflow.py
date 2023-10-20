@@ -113,6 +113,5 @@ def validate(model, val_loader, exp_name, logstep, args):
         plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
         plt.close()
 
-
     print("Average Validation Neg. Log Probability Mass:", np.mean(nll_list))
     return np.mean(nll_list)

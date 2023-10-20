@@ -14,12 +14,10 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import stflow
-from models.architectures import srflow
-from models.architectures import cdiff
+from models.architectures import stflow, srflow, cdiff, srgan
 
 # Optimization
-from optimization import trainer_stflow,trainer_cdiff, trainer_srflow
+from optimization import trainer_stflow,trainer_cdiff, trainer_srflow, trainer_srgan
 
 # import evaluate
 import test
@@ -102,6 +100,23 @@ def main(args):
                               model=model,
                               device=args.device)
 
+    if args.modeltype == "srgan":
+
+        generator = srgan.Generator(in_channels, args.s)
+        discriminator = srgan.Discriminator(in_channels)
+        model = (generator, discriminator)
+
+        if args.resume:
+            modelname = 'model_epoch_1_step_53000.tar'
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
+            ckpt = torch.load(modelpath)
+            model.load_state_dict(ckpt['model_state_dict'])
+
+        trainer_srgan.trainer(args=args, train_loader=train_loader,
+                              valid_loader=valid_loader,
+                              model=model,
+                              device=args.device)
+
     if args.modeltype == "stflow":
 
         model = stflow.FlowModel((in_channels, args.height, args.width),
@@ -127,7 +142,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # train configs
-    parser.add_argument("--modeltype", type=str, default="cdiff",
+    parser.add_argument("--modeltype", type=str, default="srgan",
                         help="Specify modeltype you would like to train [srflow, cdiff, stflow].")
     parser.add_argument("--model_path", type=str, default="runs/",
                         help="Directory where models are saved.")
@@ -160,7 +175,7 @@ if __name__ == "__main__":
     parser.add_argument("--nbits", type=int, default=8,
                         help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
-    parser.add_argument("--gauss_steps", type=int, default=100,
+    parser.add_argument("--gauss_steps", type=int, default=1000,
                         help="Number of gaussianization steps in diffusion process.")
     parser.add_argument("--noise_sched", type=str, default='cosine',
                         help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")

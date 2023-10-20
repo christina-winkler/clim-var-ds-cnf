@@ -102,7 +102,6 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 args = parser.parse_args()
 
 def inv_scaler(x, min_value=0, max_value=100):
-    values_range = (-1, 1)
     # min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
     # max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
     x = x * (max_value - min_value) + min_value
