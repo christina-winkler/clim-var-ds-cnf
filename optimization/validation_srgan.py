@@ -4,6 +4,9 @@ import random
 import timeit
 import PIL
 import os
+from torch.autograd import Variable
+import torch
+from torch import nn
 import torchvision
 from torchvision import transforms
 from utils import metrics
@@ -20,7 +23,41 @@ def inv_scaler(x, args):
     x = x * (max_value - min_value) + min_value
     return x
 
-def validate(model, val_loader, metric_dict, exp_name, logstep, args):
+class GeneratorLoss(nn.Module):
+    def __init__(self,loss_network):
+        super(GeneratorLoss, self).__init__()
+        # vgg = vgg16(pretrained=True)
+        # loss_network = nn.Sequential(*list(vgg.features)[:31]).eval()
+        for param in loss_network.parameters():
+            param.requires_grad = False
+        self.loss_network = loss_network
+        self.mse_loss = nn.MSELoss()
+        self.tv_loss = TVLoss()
+
+    def forward(self, out_labels, out_images, target_images):
+        # Adversarial Loss
+        # we want real_out to be close 1, and fake_out to be close 0
+        adversarial_loss = torch.mean(1 - out_labels)
+        # Perception Loss
+        perception_loss = self.mse_loss(self.loss_network(out_images), self.loss_network(target_images))
+        # Image Loss
+        image_loss = self.mse_loss(out_images, target_images)
+        # TV Loss
+        tv_loss = self.tv_loss(out_images)
+        return image_loss + 0.001 * adversarial_loss + 0.006 * perception_loss + 2e-8 * tv_loss
+
+class TVLoss(nn.Module):
+    def __init__(self, tv_loss_weight=1):
+        super(TVLoss, self).__init__()
+        self.tv_loss_weight = tv_loss_weight
+
+    def forward(self, x):
+        return self.tv_loss_weight * 0.5 * (
+            torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean() +
+            torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
+        )
+
+def validate(discriminator, generator, val_loader, metric_dict, exp_name, logstep, args):
 
     random.seed(0)
     torch.manual_seed(0)
@@ -31,18 +68,28 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
 
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
 
-    model.eval()
+    discriminator.eval()
+    generator.eval()
 
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            y = item[0].to(args.device)
-            x = item[1].to(args.device)
+            y = Variable(item[0].to(device))
+            x = Variable(item[1].to(device))
+            y_unorm = item[2].to(device)
+            x_unorm = item[3].to(device)
 
-            y_unorm = item[0].to(args.device)
-            x_unorm = item[1].to(args.device)
+            generator.zero_grad()
+            fake_img=generator(x)
 
-            loss = model(y,x)
+            discriminator.zero_grad()
+
+            fake_out = discriminator(fake_img).mean()
+            real_out = discriminator(y).mean()
+
+            d_loss = 1 - real_out + fake_out
+            g_loss = generator_criterion(fake_out, fake_img, y)
+            loss = g_loss + d_loss
 
             if batch_idx == 1:
                 break
