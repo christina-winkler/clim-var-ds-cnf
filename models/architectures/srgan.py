@@ -58,7 +58,7 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
 
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
+            nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2),
 
             nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
@@ -70,10 +70,10 @@ class Discriminator(nn.Module):
             nn.LeakyReLU(0.2),
 
             nn.Conv2d(256, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
+            nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
 
-            nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
 
@@ -84,7 +84,6 @@ class Discriminator(nn.Module):
 
     def forward(self, x):
         batch_size = x.size(0)
-        import pdb; pdb.set_trace()
         return torch.sigmoid(self.net(x).view(batch_size))
 
 
