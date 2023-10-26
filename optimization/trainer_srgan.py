@@ -121,6 +121,8 @@ def trainer(args, train_loader, valid_loader, model,
 
     paramsG = sum(x.numel() for x in generator.parameters() if x.requires_grad)
     paramsD = sum(x.numel() for x in discriminator.parameters() if x.requires_grad)
+    print("Gen:", paramsG)
+    print("Disc:", paramsD)
     params = paramsG + paramsD
 
     print('Nr of Trainable Params on {}:  '.format(device), params)
@@ -163,7 +165,7 @@ def trainer(args, train_loader, valid_loader, model,
             g_loss = generator_criterion(fake_out, fake_img, y)
             g_loss.backward()
             optimizerG.step()
-            
+
             step = step + 1
             print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, Gen Loss {:.3f}, Disc Loss: {:.3f}".format(
                     datetime.now().strftime("%Y-%m-%d %H:%M"),

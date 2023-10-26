@@ -14,12 +14,14 @@ class Generator(nn.Module):
         self.block2 = ResidualBlock(64)
         self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
         self.block3 = ResidualBlock(128)
-        self.block4 = ResidualBlock(128)
-        self.block5 = ResidualBlock(128)
-        self.conv5 = nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1)
-        self.block6 = ResidualBlock(64)
+        self.conv3 = nn.Conv2d(128, 256, kernel_size=3, stride=1, padding=1)
+        self.block4 = ResidualBlock(256)
+        self.conv4 = nn.Conv2d(256, 256, kernel_size=3, stride=1, padding=1)
+        self.block5 = ResidualBlock(256)
+        self.conv5 = nn.Conv2d(256, 128, kernel_size=3, stride=1, padding=1)
+        self.block6 = ResidualBlock(128)
         self.block7 = nn.Sequential(
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.Conv2d(128, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64)
         )
         block8 = [UpsampleBlock(64, 2) for _ in range(upsample_block_num)]
@@ -31,8 +33,10 @@ class Generator(nn.Module):
         block2 = self.block2(block1)
         conv2 = self.conv2(block2)
         block3 = self.block3(conv2)
-        block4 = self.block4(block3)
-        block5 = self.block5(block4)
+        conv3 = self.conv3(block3)
+        block4 = self.block4(conv3)
+        conv4 = self.conv4(block4)
+        block5 = self.block5(conv4)
         conv5 = self.conv5(block5)
         block6 = self.block6(conv5)
         block7 = self.block7(block6)
@@ -46,22 +50,18 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Conv2d(in_channels, 32, kernel_size=3, padding=1),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(64),
+            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
             nn.LeakyReLU(0.2),
 
             nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2),
 
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2),
 
-            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(128),
             nn.LeakyReLU(0.2),
 
@@ -69,25 +69,22 @@ class Discriminator(nn.Module):
             nn.BatchNorm2d(256),
             nn.LeakyReLU(0.2),
 
-            nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(256),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
 
-            nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
+            nn.Conv2d(256, 512, kernel_size=3, stride=2, padding=1),
             nn.BatchNorm2d(512),
             nn.LeakyReLU(0.2),
 
             nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(512, 1024, kernel_size=1),
+            nn.Conv2d(512, 512, kernel_size=1),
             nn.LeakyReLU(0.2),
-            nn.Conv2d(1024, 1, kernel_size=1))
+            nn.Conv2d(512, 1, kernel_size=1))
 
     def forward(self, x):
         batch_size = x.size(0)
+        import pdb; pdb.set_trace()
         return torch.sigmoid(self.net(x).view(batch_size))
 
 

@@ -148,7 +148,7 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y_unorm).mean())
             metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y_unorm).mean())
             metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y_unorm).mean())
-            print(metric_dict)
+
             with open(viz_dir + '/metric_dict.txt', 'w') as f:
                 for key, value in metric_dict.items():
                     f.write('%s:%s\n' % (key, value))
