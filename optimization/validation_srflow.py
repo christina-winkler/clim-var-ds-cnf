@@ -6,7 +6,7 @@ import PIL
 import os
 import torchvision
 from torchvision import transforms
-
+from utils import metrics
 import sys
 sys.path.append("../../")
 
@@ -14,7 +14,13 @@ from os.path import exists, join
 import matplotlib.pyplot as plt
 import pdb
 
-def validate(model, val_loader, exp_name, logstep, args):
+def inv_scaler(x, args):
+    min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    x = x * (max_value - min_value) + min_value
+    return x
+
+def validate(model, val_loader, metric_dict, exp_name, logstep, args):
 
     random.seed(0)
     torch.manual_seed(0)
@@ -33,6 +39,9 @@ def validate(model, val_loader, exp_name, logstep, args):
 
             y = item[0].to(args.device)
             x = item[1].to(args.device)
+
+            y_unorm = item[0].to(args.device)
+            x_unorm = item[1].to(args.device)
 
             z, nll = model.forward(x_hr=y, xlr=x)
 
@@ -113,13 +122,13 @@ def validate(model, val_loader, exp_name, logstep, args):
         plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
         plt.close()
 
-        metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y_unorm).mean())
-        metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y_unorm).mean())
-        metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y_unorm).mean())
+        metric_dict['MSE'].append(metrics.MSE(inv_scaler(mu08, args), y_unorm).mean())
+        metric_dict['MAE'].append(metrics.MAE(inv_scaler(mu08, args), y_unorm).mean())
+        metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(mu08, args), y_unorm).mean())
         print(metric_dict)
-        with open(viz_dir + '/metric_dict.txt', 'w') as f:
+        with open(savedir + '/metric_dict.txt', 'w') as f:
             for key, value in metric_dict.items():
                 f.write('%s:%s\n' % (key, value))
 
-    print("Average Validation Neg. Log Probability Mass:", np.mean(nll_list))
+    print(metric_dict)
     return metric_dict, np.mean(nll_list)

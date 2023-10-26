@@ -44,7 +44,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--model", type=str, default="srflow",
                     help="Model you want to train.")
 parser.add_argument("--modeltype", type=str, default="srflow",
-                    help="Specify modeltype you would like to train [flow, unet3d].")
+                    help="Specify modeltype you would like to train [srflow, cdiff, srgan].")
 parser.add_argument("--model_path", type=str, default="runs/",
                     help="Directory where models are saved.")
 parser.add_argument("--modelname", type=str, default=None,
@@ -94,8 +94,7 @@ parser.add_argument("--condch", type=int, default=128//8,
 # data
 parser.add_argument("--datadir", type=str, default="data",
                     help="Dataset to train the model on.")
-parser.add_argument("--trainset", type=str, default="era5-TCW",
-                    help="Dataset to train the model on.")
+parser.add_argument("--trainset", type=str, default="era5-TCW", help='[era5-TCW, era5-T2M]')
 parser.add_argument("--testset", type=str, default="era5-TCW",
                     help="Specify test dataset")
 
@@ -638,9 +637,15 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             labelax0 = [r'Ground Truth',r'Prediction']
             y_fl = y.flatten().detach().cpu().numpy()
             mu05_fl = mu05.flatten().detach().cpu().numpy()
-            ax0.hist(np.stack((y_fl, mu05_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax0)
+            values, bins, _ = ax0.hist(np.stack((y_fl, mu05_fl),axis=1), n_bins,
+                                      density=True, histtype='step',color=colors,
+                                      label=labelax0)
+            area0 = sum(np.diff(bins)*values[0])
+            print(area0)
+            area1 = sum(np.diff(bins)*values[1])
+            print(area1)
             ax0.set_xlabel('pixel values')
-            ax0.set_ylabel('normalized ensity')
+            ax0.set_ylabel('normalized density')
             ax0.set_title('Normalized prediction vs. ground truth pixel distribution')
             ax0.legend(prop={'size': 10})
 
@@ -649,7 +654,7 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             # y_unorm = inv_scaler(y, y_unorm.min(), y_unorm.max())
             y_unorm_fl = y_unorm.flatten().detach().cpu().numpy()
             mu05_unorm_fl = mu05_unorm.flatten().detach().cpu().numpy()
-            ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
+            value, bins ,_= ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
             ax1.set_xlabel('pixel values')
             ax1.set_ylabel('unormalized density')
             ax1.set_title('Unormalized prediction vs. ground truth pixel distribution')
@@ -687,13 +692,13 @@ if __name__ == "__main__":
 
     # Load Model
     # temperature
-    # modelname = 'model_epoch_35_step_23750'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5_2023_09_08_14_13_03/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_4_step_29000'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_1_step_25000'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_10_17_06_05/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_1_step_25000'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_10_17_06_05/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling
     # modelname = 'model_epoch_2_step_27000'
@@ -712,8 +717,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    # plot_std(model, test_loader, exp_name, modelname, args)
-    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    plot_std(model, test_loader, exp_name, modelname, args)
+    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
     # test(model, test_loader, exp_name, modelname, -99999, args)

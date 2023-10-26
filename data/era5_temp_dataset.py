@@ -103,7 +103,7 @@ class ERA5T2MData(Dataset):
 
         x = resize(y, (y.shape[0]//4, y.shape[1]//4), anti_aliasing=True)
         y = resize(y, (y.shape[0]//2, y.shape[1]//2), anti_aliasing=True)
-        return self.transform_y(y).squeeze(1), self.transform_x(x).squeeze(1), str(time), latitude, longitude
+        return self.transform_y(y).squeeze(1), self.transform_x(x).squeeze(1), y, x #, str(time), latitude, longitude
 
 # datashape = ERA5T2MData('/home/christina/Documents/research/auto-encoding-normalizing-flows/code/data/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr')[0][0].shape
 # temperatures, time = ERA5T2MData('/home/christina/Documents/research/auto-encoding-normalizing-flows/code/data/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr')[0]

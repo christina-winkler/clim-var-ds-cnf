@@ -135,6 +135,8 @@ def main(args):
                                valid_loader=valid_loader,
                                model=model,
                                device=args.device)
+    else:
+         print("Modeltype not available! Check spelling.")
 
 
 if __name__ == "__main__":

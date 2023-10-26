@@ -78,8 +78,9 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
 
             y = Variable(item[0].to(args.device))
             x = Variable(item[1].to(args.device))
-            y_unorm = item[2].to(args.device).squeeze(1)
-            x_unorm = item[3].to(args.device).squeeze(1)
+
+            y_unorm = item[2].to(args.device)
+            x_unorm = item[3].to(args.device)
 
             generator.zero_grad()
             fake_img=generator(x)

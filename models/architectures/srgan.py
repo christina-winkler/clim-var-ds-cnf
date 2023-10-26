@@ -12,9 +12,11 @@ class Generator(nn.Module):
         self.block1 = nn.Sequential(nn.Conv2d(in_channels, 64, kernel_size=9, padding=4),
                                     nn.PReLU())
         self.block2 = ResidualBlock(64)
-        self.block3 = ResidualBlock(64)
-        self.block4 = ResidualBlock(64)
-        self.block5 = ResidualBlock(64)
+        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, stride=1, padding=1)
+        self.block3 = ResidualBlock(128)
+        self.block4 = ResidualBlock(128)
+        self.block5 = ResidualBlock(128)
+        self.conv5 = nn.Conv2d(128, 64, kernel_size=3, stride=1, padding=1)
         self.block6 = ResidualBlock(64)
         self.block7 = nn.Sequential(
             nn.Conv2d(64, 64, kernel_size=3, padding=1),
@@ -27,10 +29,12 @@ class Generator(nn.Module):
     def forward(self, x):
         block1 = self.block1(x)
         block2 = self.block2(block1)
-        block3 = self.block3(block2)
+        conv2 = self.conv2(block2)
+        block3 = self.block3(conv2)
         block4 = self.block4(block3)
         block5 = self.block5(block4)
-        block6 = self.block6(block5)
+        conv5 = self.conv5(block5)
+        block6 = self.block6(conv5)
         block7 = self.block7(block6)
         block8 = self.block8(block1 + block7)
 
@@ -42,7 +46,11 @@ class Discriminator(nn.Module):
         super(Discriminator, self).__init__()
 
         self.net = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+            nn.Conv2d(in_channels, 32, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
             nn.LeakyReLU(0.2),
 
             nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),

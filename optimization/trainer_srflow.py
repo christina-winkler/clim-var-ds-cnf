@@ -76,7 +76,7 @@ def trainer(args, train_loader, valid_loader, model,
     model.to(device)
     scaler = MinMaxScaler()
     l1 = nn.L1Loss()
-
+    metric_dict = {'MSE': [], 'RMSE': [], 'MAE': []}
     params = sum(x.numel() for x in model.parameters() if x.requires_grad)
     print('Nr of Trainable Params on {}:  '.format(device), params)
 
@@ -119,7 +119,7 @@ def trainer(args, train_loader, valid_loader, model,
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll  + l1(inv_scaler(y_hat), y_unorm[0,...])
+            loss = nll  + l1(inv_scaler(y_hat), y_unorm)
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
@@ -190,8 +190,9 @@ def trainer(args, train_loader, valid_loader, model,
 
             if step % args.val_interval == 0:
                 print('Validating model ... ')
-                nll_valid = validate(model,
+                metric_dict, nll_valid = validate(model,
                                      valid_loader,
+                                     metric_dict,
                                      args.experiment_dir,
                                      "{}".format(step),
                                      args)
