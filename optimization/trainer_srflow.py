@@ -50,7 +50,7 @@ def trainer(args, train_loader, valid_loader, model,
 
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
-                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s))
+                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
 
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
