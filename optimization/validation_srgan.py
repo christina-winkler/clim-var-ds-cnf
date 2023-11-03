@@ -44,6 +44,9 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     discriminator.eval()
     generator.eval()
 
+    mse_loss_list = []
+    mse_loss = nn.MSELoss()
+    bce_loss = nn.BCELoss()
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
@@ -53,6 +56,10 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             fake_img=generator(x)
             fake_out = discriminator(fake_img).mean()
             real_out = discriminator(y).mean()
+
+            g_loss = mse_loss(fake_img, y)
+            # Generative loss
+            mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
 
             if batch_idx == 10:
                 break
@@ -113,4 +120,4 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
                 for key, value in metric_dict.items():
                     f.write('%s:%s\n' % (key, value))
 
-    return loss, metric_dict
+    return np.mean(mse_loss_list), metric_dict 

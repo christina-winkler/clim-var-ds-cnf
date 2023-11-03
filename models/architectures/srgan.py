@@ -102,7 +102,6 @@ class ResidualBlock(nn.Module):
         residual = self.prelu(residual)
         residual = self.conv2(residual)
         residual = self.bn2(residual)
-
         return x + residual
 
 

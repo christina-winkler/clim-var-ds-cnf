@@ -127,17 +127,24 @@ def trainer(args, train_loader, valid_loader, model,
 
             discriminator.zero_grad()
 
-            fake_out = discriminator(fake_img).mean()
-            real_out = discriminator(y).mean()
+            fake_out = discriminator(fake_img)
+            real_out = discriminator(y)
 
-            d_loss = bce_loss(real_out, fake_out)  # 1 - real_out + fake_out
+            real_label = torch.full((args.bsz, 1), 1, dtype=fake_img.dtype).to(device)
+            fake_label = torch.full((args.bsz, 1), 0, dtype=fake_img.dtype).to(device)
+
+            d_loss_real = bce_loss(real_out, real_label.squeeze(1))
+            d_loss_fake = bce_loss(fake_out, fake_label.squeeze(1))
+            d_loss = d_loss_real + d_loss_fake
 
             # update discriminator network parameters
             d_loss.backward(retain_graph=True)
             optimizerD.step()
 
+            adversarial_loss = bce_loss(discriminator(fake_img), real_label.squeeze(1))
+
             # update generator network parameters
-            g_loss = mse_loss(fake_img, y)
+            g_loss = mse_loss(fake_img, y) + adversarial_loss * 0.0001
 
             g_loss.requires_grad_()
             g_loss.backward(retain_graph=True)
