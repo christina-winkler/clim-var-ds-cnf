@@ -32,9 +32,9 @@ def load_era5_TCW(args):
 
     print("Loading ERA5 TCW ...")
 
-    train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train', s=args.s, testmode=False)
-    val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val', s=args.s, testmode=False)
-    test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test', s=args.s, testmode=True)
+    train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train', s=args.s)
+    val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val', s=args.s)
+    test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test', s=args.s)
 
     train_loader = data_utils.DataLoader(train_data, args.bsz, shuffle=True,
                                          drop_last=True)
@@ -51,7 +51,7 @@ def load_era5_T2M(args):
 
     dpath = '/home/christina/Documents/clim-var-ds-cnf/data/assets/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr'
 
-    dataset = ERA5T2MData(data_path=dpath)
+    dataset = ERA5T2MData(data_path=dpath, s=args.s)
 
     n_train_samples = int(len(dataset) // (1/0.7))
     n_val_samples = int(len(dataset) // (1/0.2))

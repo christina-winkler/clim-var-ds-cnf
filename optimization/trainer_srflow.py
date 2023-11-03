@@ -95,8 +95,8 @@ def trainer(args, train_loader, valid_loader, model,
 
             y = item[0].to(device)
             x = item[1].to(device)
-            y_unorm = item[2].to(device)
-            x_unorm = item[3].to(device)
+            # y_unorm = item[2].to(device)
+            # x_unorm = item[3].to(device)
 
             model.train()
             optimizer.zero_grad()
@@ -110,16 +110,16 @@ def trainer(args, train_loader, valid_loader, model,
                                             logdet=0)
 
             # forward loss
-            z, nll = model.forward(x_hr=y_unorm, xlr=x_unorm)
+            z, nll = model.forward(x_hr=y, xlr=x)
 
             # reverse loss
-            y_hat, logdet, logpz = model(xlr=x, reverse=True)
+            # y_hat, logdet, logpz = model(xlr=x, reverse=True)
 
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll  + l1(inv_scaler(y_hat), y_unorm)
+            loss = nll # + l1(y_hat, y)
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
@@ -166,14 +166,14 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                      # Super-Resolving low-res
-                    y_hat, logdet, logpz = model(xlr=x_unorm, reverse=True, eps=0.8)
+                    y_hat, logdet, logpz = model(xlr=x, reverse=True, eps=0.8)
                     print(y_hat.max(), y_hat.min(), y.max(), y.min())
-                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=True, nrow=3)
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=False, nrow=3)
                     plt.figure()
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Y hat")
-                    plt.savefig(viz_dir + '/y_hat_mu08{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    plt.savefig(viz_dir + '/y_hat_mu08_{}.png'.format(step), dpi=300,bbox_inches='tight')
                     # plt.show()
                     plt.close()
 

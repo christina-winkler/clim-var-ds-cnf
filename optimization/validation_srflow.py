@@ -40,9 +40,6 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unorm = item[0].to(args.device)
-            x_unorm = item[1].to(args.device)
-
             z, nll = model.forward(x_hr=y, xlr=x)
 
             # Generative loss
@@ -52,10 +49,10 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
                 break
 
         # evalutae for different temperatures
-        mu0, _, _ = model(xlr=x_unorm, reverse=True, eps=0)
-        mu05, _, _ = model(xlr=x_unorm, reverse=True, eps=0.5)
-        mu08, _, _ = model(xlr=x_unorm, reverse=True, eps=0.8)
-        mu1, _, _ = model(xlr=x_unorm, reverse=True, eps=1.0)
+        mu0, _, _ = model(xlr=x, reverse=True, eps=0)
+        mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
+        mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)
+        mu1, _, _ = model(xlr=x, reverse=True, eps=1.0)
 
         savedir = "{}/snapshots/validationset/".format(exp_name)
 
@@ -122,9 +119,9 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.savefig(savedir + '/abs_err_{}.png'.format(logstep), dpi=300,bbox_inches='tight')
         plt.close()
 
-        metric_dict['MSE'].append(metrics.MSE(inv_scaler(mu08, args), y_unorm).mean())
-        metric_dict['MAE'].append(metrics.MAE(inv_scaler(mu08, args), y_unorm).mean())
-        metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(mu08, args), y_unorm).mean())
+        metric_dict['MSE'].append(metrics.MSE(inv_scaler(mu08, args), y).mean())
+        metric_dict['MAE'].append(metrics.MAE(inv_scaler(mu08, args), y).mean())
+        metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(mu08, args), y).mean())
         print(metric_dict)
         with open(savedir + '/metric_dict.txt', 'w') as f:
             for key, value in metric_dict.items():
