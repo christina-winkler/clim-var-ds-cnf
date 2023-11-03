@@ -82,9 +82,9 @@ class CondDiffusion(nn.Module):
         self.s = s
         self.loss = nn.MSELoss(reduction='sum').to(device)
 
-        self.denoise_net = unet.UNet(c+1, 1, inner_channel=32, norm_groups=4,
+        self.denoise_net = unet.UNet(c+1, 1, inner_channel=64, norm_groups=32,
                                      channel_mults=[1,2,4,8],
-                                     attn_res=[8], res_blocks=5, dropout=0.3)
+                                     attn_res=[16], res_blocks=1, dropout=0.3)
 
         if self.trainmode:
             self.set_new_noise_schedule(noise_sched, T, linear_start, linear_end, device)

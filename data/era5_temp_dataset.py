@@ -85,10 +85,10 @@ class ERA5T2MData(Dataset):
         self.data = xr.open_zarr(self.data_path)['t2m']
 
         if self.transform is None:
-            self.transform_x = transforms.Compose([transforms.ToTensor(), # XRToTensor(),
-                                                 MinMaxScaler(values_range=(0, 1))])
-            self.transform_y = transforms.Compose([transforms.ToTensor(), #XRToTensor(),
-                                                 MinMaxScaler(values_range=(0, 1))])
+            self.transform_x = transforms.Compose([transforms.ToTensor()]) #, # XRToTensor(),
+                                                 # MinMaxScaler(values_range=(0, 1))])
+            self.transform_y = transforms.Compose([transforms.ToTensor()])#, #XRToTensor(),
+                                                 # MinMaxScaler(values_range=(0, 1))])
 
     def __len__(self):
         return len(self.data)

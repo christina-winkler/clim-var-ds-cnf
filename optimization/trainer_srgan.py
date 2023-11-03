@@ -37,6 +37,8 @@ np.random.seed(0)
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
 
+torch.autograd.set_detect_anomaly(True)
+
 # code adapted from: https://github.com/lizhuoq/SRGAN/blob/main/loss.py
 
 class MinMaxScaler:
@@ -57,6 +59,7 @@ class GeneratorLoss(nn.Module):
         # loss_network = nn.Sequential(*list(vgg.features)[:31]).eval()
         for param in loss_network.parameters():
             param.requires_grad = False
+
         self.loss_network = loss_network
         self.mse_loss = nn.MSELoss()
         self.tv_loss = TVLoss()
@@ -79,10 +82,11 @@ class TVLoss(nn.Module):
         self.tv_loss_weight = tv_loss_weight
 
     def forward(self, x):
-        return self.tv_loss_weight * 0.5 * (
+        result = self.tv_loss_weight * 0.5 * (
             torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean() +
             torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
         )
+        return result
 
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
@@ -92,7 +96,7 @@ def trainer(args, train_loader, valid_loader, model,
 
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
-                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S"))
+                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s))
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
     with open(args.experiment_dir + '/configs.txt', 'w') as f:
@@ -163,7 +167,7 @@ def trainer(args, train_loader, valid_loader, model,
 
             # update generator network parameters
             g_loss = generator_criterion(fake_out, fake_img, y)
-            g_loss.backward()
+            g_loss.backward(retain_graph=True)
             optimizerG.step()
 
             step = step + 1

@@ -50,7 +50,7 @@ def trainer(args, train_loader, valid_loader, model,
 
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
-                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S"))
+                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s))
 
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
@@ -110,7 +110,7 @@ def trainer(args, train_loader, valid_loader, model,
                                             logdet=0)
 
             # forward loss
-            z, nll = model.forward(x_hr=y, xlr=x)
+            z, nll = model.forward(x_hr=y_unorm, xlr=x_unorm)
 
             # reverse loss
             y_hat, logdet, logpz = model(xlr=x, reverse=True)
@@ -146,7 +146,7 @@ def trainer(args, train_loader, valid_loader, model,
                     model.eval()
 
                     # Visualize low resolution GT
-                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
+                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
@@ -156,7 +156,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                     # Visualize High-Res GT
-                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
+                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
@@ -166,9 +166,9 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                      # Super-Resolving low-res
-                    y_hat, logdet, logpz = model(xlr=x, reverse=True, eps=0.8)
+                    y_hat, logdet, logpz = model(xlr=x_unorm, reverse=True, eps=0.8)
                     print(y_hat.max(), y_hat.min(), y.max(), y.min())
-                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
@@ -178,7 +178,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                     abs_err = torch.abs(y_hat - y)
-                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
