@@ -23,39 +23,12 @@ def inv_scaler(x, args):
     x = x * (max_value - min_value) + min_value
     return x
 
-class GeneratorLoss(nn.Module):
-    def __init__(self,loss_network):
-        super(GeneratorLoss, self).__init__()
-        # vgg = vgg16(pretrained=True)
-        # loss_network = nn.Sequential(*list(vgg.features)[:31]).eval()
-        for param in loss_network.parameters():
-            param.requires_grad = False
-        self.loss_network = loss_network
-        self.mse_loss = nn.MSELoss()
-        self.tv_loss = TVLoss()
-
-    def forward(self, out_labels, out_images, target_images):
-        # Adversarial Loss
-        # we want real_out to be close 1, and fake_out to be close 0
-        adversarial_loss = torch.mean(1 - out_labels)
-        # Perception Loss
-        perception_loss = self.mse_loss(self.loss_network(out_images), self.loss_network(target_images))
-        # Image Loss
-        image_loss = self.mse_loss(out_images, target_images)
-        # TV Loss
-        tv_loss = self.tv_loss(out_images)
-        return image_loss + 0.001 * adversarial_loss + 0.006 * perception_loss + 2e-8 * tv_loss
-
-class TVLoss(nn.Module):
-    def __init__(self, tv_loss_weight=1):
-        super(TVLoss, self).__init__()
-        self.tv_loss_weight = tv_loss_weight
-
-    def forward(self, x):
-        return self.tv_loss_weight * 0.5 * (
-            torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean() +
-            torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
-        )
+def minmax_scaler(x, args):
+    values_range = (-1, 1)
+    min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    x = (x - min_value) / (max_value - min_value)
+    return x * (values_range[1] - values_range[0]) + values_range[0]
 
 def validate(discriminator, generator, val_loader, metric_dict, exp_name, logstep, args):
 
@@ -71,30 +44,17 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     discriminator.eval()
     generator.eval()
 
-    generator_criterion = GeneratorLoss(generator)
-
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            y = Variable(item[0].to(args.device))
-            x = Variable(item[1].to(args.device))
+            y = Variable(minmax_scaler(item[0].to(device), args))
+            x = Variable(minmax_scaler(item[1].to(device), args))
 
-            y_unorm = item[2].to(args.device)
-            x_unorm = item[3].to(args.device)
-
-            generator.zero_grad()
             fake_img=generator(x)
-
-            discriminator.zero_grad()
-
             fake_out = discriminator(fake_img).mean()
             real_out = discriminator(y).mean()
 
-            d_loss = 1 - real_out + fake_out
-            g_loss = generator_criterion(fake_out, fake_img, y)
-            loss = g_loss + d_loss
-
-            if batch_idx == 1:
+            if batch_idx == 10:
                 break
 
             viz_dir = "{}/snapshots/validationset/".format(exp_name)
@@ -145,9 +105,9 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             # plt.show()
             plt.close()
 
-            metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y_unorm).mean())
-            metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y_unorm).mean())
-            metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y_unorm).mean())
+            metric_dict['MSE'].append(metrics.MSE(inv_scaler(y_hat, args), y).mean())
+            metric_dict['MAE'].append(metrics.MAE(inv_scaler(y_hat, args), y).mean())
+            metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(y_hat, args), y).mean())
 
             with open(viz_dir + '/metric_dict.txt', 'w') as f:
                 for key, value in metric_dict.items():
