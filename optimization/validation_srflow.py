@@ -81,7 +81,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.savefig(savedir + '/high_res_gt_{}.png'.format(logstep), dpi=300, bbox_inches='tight')
         plt.close()
 
-        grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
+        grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), normalize=True, nrow=3)
         plt.figure()
         plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
@@ -89,7 +89,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.savefig(savedir + "mu_0_logstep_{}_valid.png".format(logstep), dpi=300)
         plt.close()
 
-        grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
+        grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), normalize=True, nrow=3)
         plt.figure()
         plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
@@ -97,7 +97,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.savefig(savedir + "mu_0.5_logstep_{}_valid.png".format(logstep), dpi=300)
         plt.close()
 
-        grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
+        grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), normalize=True, nrow=3)
         plt.figure()
         plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
@@ -105,7 +105,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.savefig(savedir + "mu_0.8_logstep_{}_valid.png".format(logstep), dpi=300)
         plt.close()
 
-        grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
+        grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), normalize=True, nrow=3)
         plt.figure()
         plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=cmap)
         plt.axis('off')
@@ -114,7 +114,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         plt.close()
 
         abs_err = torch.abs(mu08 - y)
-        grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+        grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
         plt.figure()
         plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
         plt.axis('off')
@@ -130,5 +130,4 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
             for key, value in metric_dict.items():
                 f.write('%s:%s\n' % (key, value))
 
-    print(metric_dict)
     return metric_dict, np.mean(nll_list)
