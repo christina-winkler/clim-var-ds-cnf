@@ -47,46 +47,18 @@ class MinMaxScaler:
         x = (x - min_value) / (max_value - min_value)
         return x * (values_range[1] - values_range[0]) + values_range[0]
 
+def minmax_scaler(x, args):
+    values_range = (-1, 1)
+    min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    x = (x - min_value) / (max_value - min_value)
+    return x * (values_range[1] - values_range[0]) + values_range[0]
+
 def inv_scaler(x):
     min_value = 0
     max_value = 100
     return x * (max_value - min_value) + min_value
 
-class GeneratorLoss(nn.Module):
-    def __init__(self,loss_network):
-        super(GeneratorLoss, self).__init__()
-        # vgg = vgg16(pretrained=True)
-        # loss_network = nn.Sequential(*list(vgg.features)[:31]).eval()
-        for param in loss_network.parameters():
-            param.requires_grad = False
-
-        self.loss_network = loss_network
-        self.mse_loss = nn.MSELoss()
-        self.tv_loss = TVLoss()
-
-    def forward(self, out_labels, out_images, target_images):
-        # Adversarial Loss
-        # we want real_out to be close 1, and fake_out to be close 0
-        adversarial_loss = torch.mean(1 - out_labels)
-        # Perception Loss
-        perception_loss = self.mse_loss(self.loss_network(out_images), self.loss_network(target_images))
-        # Image Loss
-        image_loss = self.mse_loss(out_images, target_images)
-        # TV Loss
-        tv_loss = self.tv_loss(out_images)
-        return image_loss + 0.001 * adversarial_loss + 0.006 * perception_loss + 2e-8 * tv_loss
-
-class TVLoss(nn.Module):
-    def __init__(self, tv_loss_weight=1):
-        super(TVLoss, self).__init__()
-        self.tv_loss_weight = tv_loss_weight
-
-    def forward(self, x):
-        result = self.tv_loss_weight * 0.5 * (
-            torch.abs(x[:, :, 1:, :] - x[:, :, :-1, :]).mean() +
-            torch.abs(x[:, :, :, 1:] - x[:, :, :, :-1]).mean()
-        )
-        return result
 
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
@@ -97,6 +69,7 @@ def trainer(args, train_loader, valid_loader, model,
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
                                         args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
+
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
     with open(args.experiment_dir + '/configs.txt', 'w') as f:
@@ -141,15 +114,13 @@ def trainer(args, train_loader, valid_loader, model,
         model = torch.nn.DataParallel(model)
         args.parallel = True
 
-    generator_criterion = GeneratorLoss(generator)
-
+    mse_loss = nn.MSELoss()
+    bce_loss = nn.BCELoss()
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 
-            y = Variable(item[0].to(device))
-            x = Variable(item[1].to(device))
-            y_unorm = item[2].to(device)
-            x_unorm = item[3].to(device)
+            y = Variable(minmax_scaler(item[0].to(device), args))
+            x = Variable(minmax_scaler(item[1].to(device), args))
 
             generator.zero_grad()
             fake_img=generator(x)
@@ -159,14 +130,16 @@ def trainer(args, train_loader, valid_loader, model,
             fake_out = discriminator(fake_img).mean()
             real_out = discriminator(y).mean()
 
-            d_loss = 1 - real_out + fake_out
+            d_loss = bce_loss(real_out, fake_out)  # 1 - real_out + fake_out
 
             # update discriminator network parameters
             d_loss.backward(retain_graph=True)
             optimizerD.step()
 
             # update generator network parameters
-            g_loss = generator_criterion(fake_out, fake_img, y)
+            g_loss = mse_loss(fake_img, y)
+
+            g_loss.requires_grad_()
             g_loss.backward(retain_graph=True)
             optimizerG.step()
 

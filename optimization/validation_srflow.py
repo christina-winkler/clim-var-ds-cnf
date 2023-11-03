@@ -122,7 +122,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
         metric_dict['MSE'].append(metrics.MSE(inv_scaler(mu08, args), y).mean())
         metric_dict['MAE'].append(metrics.MAE(inv_scaler(mu08, args), y).mean())
         metric_dict['RMSE'].append(metrics.RMSE(inv_scaler(mu08, args), y).mean())
-        print(metric_dict)
+
         with open(savedir + '/metric_dict.txt', 'w') as f:
             for key, value in metric_dict.items():
                 f.write('%s:%s\n' % (key, value))
