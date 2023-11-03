@@ -47,8 +47,8 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            y = Variable(minmax_scaler(item[0].to(device), args))
-            x = Variable(minmax_scaler(item[1].to(device), args))
+            y = Variable(minmax_scaler(item[0].to(args.device), args))
+            x = Variable(minmax_scaler(item[1].to(args.device), args))
 
             fake_img=generator(x)
             fake_out = discriminator(fake_img).mean()
