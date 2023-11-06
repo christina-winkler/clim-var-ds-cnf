@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import stflow, srflow, cdiff, srgan
+from models.architectures import stflow, srflow, cdiff, srgan, srgan2
 
 # Optimization
 from optimization import trainer_stflow,trainer_cdiff, trainer_srflow, trainer_srgan
@@ -101,8 +101,9 @@ def main(args):
                               device=args.device)
 
     if args.modeltype == "srgan":
-
-        generator = srgan.Generator(in_channels, args.s)
+        # generator = srgan.Generator(in_channels, args.s)
+        generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+        # generator = srgan.ResNet(in_channels, noise=True, number_residual_blocks=8, upsampling_factor=args.s)
         discriminator = srgan.Discriminator(in_channels)
         model = (generator, discriminator)
 

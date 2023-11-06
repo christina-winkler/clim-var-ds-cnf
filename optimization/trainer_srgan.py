@@ -130,6 +130,7 @@ def trainer(args, train_loader, valid_loader, model,
             fake_out = discriminator(fake_img)
             real_out = discriminator(y)
 
+            # compute discriminator loss
             real_label = torch.full((args.bsz, 1), 1, dtype=fake_img.dtype).to(device)
             fake_label = torch.full((args.bsz, 1), 0, dtype=fake_img.dtype).to(device)
 
@@ -141,10 +142,12 @@ def trainer(args, train_loader, valid_loader, model,
             d_loss.backward(retain_graph=True)
             optimizerD.step()
 
+            # compute adversarial loss
             adversarial_loss = bce_loss(discriminator(fake_img), real_label.squeeze(1))
 
             # update generator network parameters
-            g_loss = mse_loss(fake_img, y) + adversarial_loss * 0.0001
+            perc_loss = mse_loss(fake_img, y)
+            g_loss = perc_loss + 01e-3 * adversarial_loss
 
             g_loss.requires_grad_()
             g_loss.backward(retain_graph=True)
