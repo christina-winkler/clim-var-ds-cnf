@@ -41,7 +41,7 @@ def RMSE(yhat,y):
     _,_,h,w=y.shape
     sq_diff = (yhat-y)**2
     sum = sq_diff.sum(dim=[1,2,3])
-    return torch.sqrt(sum / (h*w))
+    return torch.sqrt(sum / (h*w)).mean()
 
 def MSE(y_hat, y):
     _,_,h,w=y.shape

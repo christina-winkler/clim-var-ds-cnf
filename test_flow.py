@@ -338,19 +338,19 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            current_mse0 = metrics.MSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
-            # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
-            mse0 = list(map(add, current_mse0, mse0))
-            print('Current MSE', current_mse0[0])
-
-            current_mse05 = metrics.MSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
-            mse05 = list(map(add, current_mse05, mse05))
-
-            current_mse08 = metrics.MSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
-            mse08 = list(map(add, current_mse08, mse08))
-
-            current_mse1 = metrics.MSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
-            mse1 = list(map(add, current_mse1, mse1))
+            # current_mse0 = metrics.MSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
+            # # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
+            # mse0 = list(map(add, current_mse0, mse0))
+            # print('Current MSE', current_mse0[0])
+            #
+            # current_mse05 = metrics.MSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
+            # mse05 = list(map(add, current_mse05, mse05))
+            #
+            # current_mse08 = metrics.MSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
+            # mse08 = list(map(add, current_mse08, mse08))
+            #
+            # current_mse1 = metrics.MSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
+            # mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
             current_mae0 = metrics.MAE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
@@ -364,29 +364,29 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_mae05 = metrics.MAE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy() # * 100
+            current_mae05 = metrics.MAE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
             mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy() # * 100
+            current_mae08 = metrics.MAE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
             mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy() # * 100
+            current_mae1 = metrics.MAE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
             mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
-            current_rmse0 = metrics.RMSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm)
+            current_rmse0 = metrics.RMSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
             # current_rmse0 = metrics.RMSE(mu0, y)#  * 100
-            rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
-            print('Current RMSE', current_rmse0[0].item())
+            rmse0.append(current_rmse0)
+            print('Current RMSE', current_rmse0)
 
-            current_rmse05 = metrics.RMSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm) #* 100
-            rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
+            current_rmse05 = metrics.RMSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
+            rmse05.append(current_rmse05)
 
-            current_rmse08 = metrics.RMSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm) #* 100
-            rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
+            current_rmse08 = metrics.RMSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
+            rmse08.append(current_rmse08)
 
-            current_rmse1 = metrics.RMSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)#*100
-            rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
+            current_rmse1 = metrics.RMSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
+            rmse1.append(current_rmse1)
 
             # MMD
             # current_mmd0 = metrics.MMD(inv_scaler(mu0,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
@@ -400,6 +400,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             #
             # current_mmd1 = metrics.MMD(inv_scaler(mu1s,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
             # mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
+
 
             crps = []
             for i in range(8):
@@ -483,35 +484,35 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
                 f.write('Avrg bw runtime: %.2f'% np.mean(avrg_bw_time))
 
     # compute average metric values over test set
-    avrg_ssim0 = np.mean(ssim0) # list(map(lambda x: x/len(test_loader), ssim0))
-    avrg_ssim05 = np.mean(ssim05) # list(map(lambda x: x/len(test_loader), ssim05))
-    avrg_ssim08 = np.mean(ssim08) # list(map(lambda x: x/len(test_loader), ssim08))
-    avrg_ssim1 = np.mean(ssim1) # list(map(lambda x: x/len(test_loader), ssim1))
+    # avrg_ssim0 = np.mean(ssim0) # list(map(lambda x: x/len(test_loader), ssim0))
+    # avrg_ssim05 = np.mean(ssim05) # list(map(lambda x: x/len(test_loader), ssim05))
+    # avrg_ssim08 = np.mean(ssim08) # list(map(lambda x: x/len(test_loader), ssim08))
+    # avrg_ssim1 = np.mean(ssim1) # list(map(lambda x: x/len(test_loader), ssim1))
+    #
+    # avrg_psnr0 = np.mean(psnr0) #list(map(lambda x: x/len(test_loader), psnr0))
+    # avrg_psnr05 = np.mean(psnr05) #list(map(lambda x: x/len(test_loader), psnr05))
+    # avrg_psnr08 = np.mean(psnr08) # list(map(lambda x: x/len(test_loader), psnr08))
+    # avrg_psnr1 = np.mean(psnr1) # list(map(lambda x: x/len(test_loader), psnr1))
 
-    avrg_psnr0 = np.mean(psnr0) #list(map(lambda x: x/len(test_loader), psnr0))
-    avrg_psnr05 = np.mean(psnr05) #list(map(lambda x: x/len(test_loader), psnr05))
-    avrg_psnr08 = np.mean(psnr08) # list(map(lambda x: x/len(test_loader), psnr08))
-    avrg_psnr1 = np.mean(psnr1) # list(map(lambda x: x/len(test_loader), psnr1))
-
-    avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
-    avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
-    avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
-    avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
+    # avrg_mse0 = list(map(lambda x: x/len(test_loader), mse0))
+    # avrg_mse05 = list(map(lambda x: x/len(test_loader), mse05))
+    # avrg_mse08 = list(map(lambda x: x/len(test_loader), mse08))
+    # avrg_mse1 = list(map(lambda x: x/len(test_loader), mse1))
 
     avrg_mae0 = np.mean(mae0) # list(map(lambda x: x/len(test_loader), mae0))
     avrg_mae05 = np.mean(mae05) # list(map(lambda x: x/len(test_loader), mae05))
     avrg_mae08 = np.mean(mae08)# list(map(lambda x: x/len(test_loader), mae08))
     avrg_mae1 = np.mean(mae1) #list(map(lambda x: x/len(test_loader), mae1))
 
-    avrg_rmse0 = list(map(lambda x: x/len(test_loader), rmse0))
-    avrg_rmse05 = list(map(lambda x: x/len(test_loader), rmse05))
-    avrg_rmse08 = list(map(lambda x: x/len(test_loader), rmse08))
-    avrg_rmse1 = list(map(lambda x: x/len(test_loader), rmse1))
+    avrg_rmse0 = np.mean(rmse0)
+    avrg_rmse05 = np.mean(rmse05)
+    avrg_rmse08 = np.mean(rmse08)
+    avrg_rmse1 = np.mean(rmse1)
 
-    avrg_mmd0 = list(map(lambda x: x/len(test_loader), mmd0))
-    avrg_mmd05 = list(map(lambda x: x/len(test_loader), mmd05))
-    avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08))
-    avrg_mmd1 = list(map(lambda x: x/len(test_loader),mmd1))
+    # avrg_mmd0 = list(map(lambda x: x/len(test_loader), mmd0))
+    # avrg_mmd05 = list(map(lambda x: x/len(test_loader), mmd05))
+    # avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08))
+    # avrg_mmd1 = list(map(lambda x: x/len(test_loader),mmd1))
 
     avrg_crps = list(map(lambda x: x/len(test_loader), crps0))
 
@@ -519,43 +520,43 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     with open(savedir_txt + 'metric_results.txt','w') as f:
 
 
-        f.write('Avrg SSIM mu0:\n')
-        f.write("%f \n" % np.mean(avrg_ssim0))
+        # f.write('Avrg SSIM mu0:\n')
+        # f.write("%f \n" % np.mean(avrg_ssim0))
+        #
+        # f.write('Avrg SSIM mu05:\n')
+        # f.write("%f \n" %np.mean(avrg_ssim05))
+        #
+        # f.write('Avrg SSIM mu08:\n')
+        # f.write("%f \n" %np.mean(avrg_ssim08))
+        #
+        # f.write('Avrg SSIM mu1:\n')
+        # f.write("%f \n" %np.mean(avrg_ssim1))
+        #
+        #
+        # f.write('Avrg PSNR mu0:\n')
+        # f.write("%f \n" % np.mean(avrg_psnr0))
+        #
+        # f.write('Avrg PSNR mu05:\n')
+        # f.write("%f \n" %np.mean(avrg_psnr05))
+        #
+        # f.write('Avrg PSNR mu08:\n')
+        # f.write("%f \n" %np.mean(avrg_psnr08))
+        #
+        # f.write('Avrg PSNR mu1:\n')
+        # f.write("%f \n" %np.mean(avrg_psnr1))
 
-        f.write('Avrg SSIM mu05:\n')
-        f.write("%f \n" %np.mean(avrg_ssim05))
 
-        f.write('Avrg SSIM mu08:\n')
-        f.write("%f \n" %np.mean(avrg_ssim08))
-
-        f.write('Avrg SSIM mu1:\n')
-        f.write("%f \n" %np.mean(avrg_ssim1))
-
-
-        f.write('Avrg PSNR mu0:\n')
-        f.write("%f \n" % np.mean(avrg_psnr0))
-
-        f.write('Avrg PSNR mu05:\n')
-        f.write("%f \n" %np.mean(avrg_psnr05))
-
-        f.write('Avrg PSNR mu08:\n')
-        f.write("%f \n" %np.mean(avrg_psnr08))
-
-        f.write('Avrg PSNR mu1:\n')
-        f.write("%f \n" %np.mean(avrg_psnr1))
-
-
-        f.write('Avrg MSE mu0:\n')
-        f.write("%f \n" %np.mean(avrg_mse0))
-
-        f.write('Avrg MSE mu05:\n')
-        f.write("%f \n" %np.mean(avrg_mse05))
-
-        f.write('Avrg MSE mu08:\n')
-        f.write("%f \n" %np.mean(avrg_mse08))
-
-        f.write('Avrg MSE mu1:\n')
-        f.write("%f \n" %np.mean(avrg_mse1))
+        # f.write('Avrg MSE mu0:\n')
+        # f.write("%f \n" %np.mean(avrg_mse0))
+        #
+        # f.write('Avrg MSE mu05:\n')
+        # f.write("%f \n" %np.mean(avrg_mse05))
+        #
+        # f.write('Avrg MSE mu08:\n')
+        # f.write("%f \n" %np.mean(avrg_mse08))
+        #
+        # f.write('Avrg MSE mu1:\n')
+        # f.write("%f \n" %np.mean(avrg_mse1))
 
 
         f.write('Avrg MAE mu0:\n')
@@ -584,20 +585,20 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         f.write("%f \n" %np.mean(avrg_rmse1))
 
 
-        f.write('Avrg MMD mu0:\n')
-        f.write("%f \n" %np.mean(avrg_mmd0))
-
-        f.write('Avrg MMD mu05:\n')
-        f.write("%f \n" %np.mean(avrg_mmd05))
-
-        f.write('Avrg MMD mu08:\n')
-        f.write("%f \n" %np.mean(avrg_mmd08))
-
-        f.write('Avrg MMD mu1:\n')
-        f.write("%f \n" %np.mean(avrg_mmd1))
-
-        f.write('Avrg CRPS mu0:\n')
-        f.write("%f \n" %np.mean(avrg_crps))
+        # f.write('Avrg MMD mu0:\n')
+        # f.write("%f \n" %np.mean(avrg_mmd0))
+        #
+        # f.write('Avrg MMD mu05:\n')
+        # f.write("%f \n" %np.mean(avrg_mmd05))
+        #
+        # f.write('Avrg MMD mu08:\n')
+        # f.write("%f \n" %np.mean(avrg_mmd08))
+        #
+        # f.write('Avrg MMD mu1:\n')
+        # f.write("%f \n" %np.mean(avrg_mmd1))
+        #
+        # f.write('Avrg CRPS mu0:\n')
+        # f.write("%f \n" %np.mean(avrg_crps))
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
     print("Average Fwd. runtime", np.mean(avrg_fwd_time))
