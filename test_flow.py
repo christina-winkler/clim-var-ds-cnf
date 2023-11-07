@@ -117,14 +117,15 @@ def plot_std(model, test_loader, exp_name, modelname, args):
     savedir_viz = "experiments/{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset)
     os.makedirs(savedir_viz, exist_ok=True)
     model.eval()
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
     with torch.no_grad():
         for batch_idx, item in enumerate(test_loader):
 
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2].squeeze(1).to(args.device)
-            x_unnorm = item[3].squeeze(1).to(args.device)
+            y_unnorm = item[2].to(args.device)
+            x_unnorm = item[3].to(args.device)
 
             mu0,_,_ = model(xlr=x, reverse=True, eps=0.0000000000000000001)
 
@@ -141,14 +142,14 @@ def plot_std(model, test_loader, exp_name, modelname, args):
 
             # create plot
             plt.figure()
-            plt.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap=color)
+            plt.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap=color)
             plt.axis('off')
             # plt.show()
             plt.savefig(savedir_viz + '/sigma_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
             plt.figure()
-            plt.imshow(mu0[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            plt.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             plt.axis('off')
             # plt.show()
             plt.savefig(savedir_viz + '/mu0_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
@@ -156,37 +157,37 @@ def plot_std(model, test_loader, exp_name, modelname, args):
 
             fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,7)
             # fig.suptitle('Y, Y_hat, mu, sigma')
-            ax1.imshow(y[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax1.imshow(y[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax1)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
             ax1.set_title('Ground Truth', fontsize=5)
             ax1.axis('off')
-            ax2.imshow(mu0[0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax2.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax2)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
             ax2.set_title('Mean', fontsize=5)
             ax2.axis('off')
-            ax3.imshow(samples[1][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax3.imshow(samples[1][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax3)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
             ax3.set_title('Sample 1', fontsize=5)
             ax3.axis('off')
-            ax4.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax4.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax4)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
             ax4.set_title('Sample 2', fontsize=5)
             ax4.axis('off')
-            ax5.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax5.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax5)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
             ax5.set_title('Sample 3', fontsize=5)
             ax5.axis('off')
-            ax6.imshow(samples[2][0,...].permute(2,1,0).cpu().numpy(), cmap='viridis')
+            ax6.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
             divider = make_axes_locatable(ax6)
             cax = divider.append_axes("right", size="5%", pad=0.05)
             cax.set_axis_off()
@@ -194,7 +195,7 @@ def plot_std(model, test_loader, exp_name, modelname, args):
             ax6.axis('off')
             divider = make_axes_locatable(ax7)
             cax = divider.append_axes("right", size="5%", pad=0.05)
-            im7 = ax7.imshow(sigma[0,...].permute(2,1,0).cpu().numpy(), cmap='magma')
+            im7 = ax7.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap='magma')
             cbar = fig.colorbar(im7,cmap='magma', cax=cax)
             cbar.ax.tick_params(labelsize=5)
             ax7.set_title('Std. Dev.', fontsize=5)
@@ -262,7 +263,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     psnr0_dens = []
     rmse0_dens = []
 
-    color = 'inferno' if args.trainset == 'era5' else 'viridis'
+    color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
     savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
 
@@ -276,8 +277,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2].squeeze(1).to(args.device)
-            x_unnorm = item[3].squeeze(1)
+            y_unnorm = item[2].unsqueeze(1).to(args.device)
+            x_unnorm = item[3].unsqueeze(1).to(args.device)
 
             z, nll = model.forward(x_hr=y, xlr=x)
 
@@ -293,62 +294,62 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # Visual Metrics
             print("Evaluate Predictions on visual metrics... ")
 
-            # SSIM
-            current_ssim_mu0 = metrics.ssim(inv_scaler(mu0), y_unnorm)
-            print('Current SSIM', current_ssim_mu0.item())
-            ssim0.append(current_ssim_mu0.cpu().numpy())
-            pd.Series(ssim0).hist()
-            plt.xlabel('SSIM')
-            plt.ylabel('nr samples')
-            plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
-            plt.close()
-
-            current_ssim_mu05 = metrics.ssim(inv_scaler(mu05), y_unnorm)
-            ssim05.append(current_ssim_mu05.cpu())
-
-            current_ssim_mu08 = metrics.ssim(inv_scaler(mu08), y_unnorm)
-            ssim08.append(current_ssim_mu08.cpu())# = list(map(add, current_ssim_mu08, ssim08))
-
-            current_ssim_mu1 = metrics.ssim(inv_scaler(mu1), y_unnorm)
-            ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
-
-            # PSNR
-            current_psnr_mu0 = metrics.psnr(inv_scaler(mu0), y_unnorm)
-            # current_psnr_mu0 = metrics.psnr(mu0, y)
-            psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
-            print('Current PSNR', current_psnr_mu0)
-            # psnr0_dens.extend(current_psnr_mu0)
-            pd.Series(psnr0).hist()
-            plt.xlabel('PSNR')
-            plt.ylabel('nr samples')
-            plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
-            plt.close()
-
-            current_psnr_mu05 = metrics.psnr(inv_scaler(mu05), y_unnorm)
-            # current_psnr_mu05 = metrics.psnr(mu05, y)
-            psnr05.append(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
-
-            # current_psnr_mu08 = metrics.psnr(mu08, y)
-            current_psnr_mu08 = metrics.psnr(inv_scaler(mu08), y_unnorm)
-            psnr08.append(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
-
-            # current_psnr_mu1 = metrics.psnr(mu1, y)
-            current_psnr_mu1 = metrics.psnr(inv_scaler(mu1), y_unnorm)
-            psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
+            # # SSIM
+            # current_ssim_mu0 = metrics.ssim(inv_scaler(mu0), y_unnorm)
+            # print('Current SSIM', current_ssim_mu0.item())
+            # ssim0.append(current_ssim_mu0.cpu().numpy())
+            # pd.Series(ssim0).hist()
+            # plt.xlabel('SSIM')
+            # plt.ylabel('nr samples')
+            # plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
+            # plt.close()
+            #
+            # current_ssim_mu05 = metrics.ssim(inv_scaler(mu05), y_unnorm)
+            # ssim05.append(current_ssim_mu05.cpu())
+            #
+            # current_ssim_mu08 = metrics.ssim(inv_scaler(mu08), y_unnorm)
+            # ssim08.append(current_ssim_mu08.cpu())# = list(map(add, current_ssim_mu08, ssim08))
+            #
+            # current_ssim_mu1 = metrics.ssim(inv_scaler(mu1), y_unnorm)
+            # ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
+            #
+            # # PSNR
+            # current_psnr_mu0 = metrics.psnr(inv_scaler(mu0), y_unnorm)
+            # # current_psnr_mu0 = metrics.psnr(mu0, y)
+            # psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
+            # print('Current PSNR', current_psnr_mu0)
+            # # psnr0_dens.extend(current_psnr_mu0)
+            # pd.Series(psnr0).hist()
+            # plt.xlabel('PSNR')
+            # plt.ylabel('nr samples')
+            # plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
+            # plt.close()
+            #
+            # current_psnr_mu05 = metrics.psnr(inv_scaler(mu05), y_unnorm)
+            # # current_psnr_mu05 = metrics.psnr(mu05, y)
+            # psnr05.append(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
+            #
+            # # current_psnr_mu08 = metrics.psnr(mu08, y)
+            # current_psnr_mu08 = metrics.psnr(inv_scaler(mu08), y_unnorm)
+            # psnr08.append(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
+            #
+            # # current_psnr_mu1 = metrics.psnr(mu1, y)
+            # current_psnr_mu1 = metrics.psnr(inv_scaler(mu1), y_unnorm)
+            # psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
             current_mse0 = metrics.MSE(inv_scaler(mu0), y_unnorm).detach().cpu().numpy()
             # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
             mse0 = list(map(add, current_mse0, mse0))
-            print('Current MSE', current_psnr_mu0.item())
+            print('Current MSE', current_mse0.item())
 
-            current_mse05 = metrics.MSE(mu05, y).detach().cpu().numpy()*100
+            current_mse05 = metrics.MSE(mu05, y).detach().cpu().numpy()#*100
             mse05 = list(map(add, current_mse05, mse05))
 
-            current_mse08 = metrics.MSE(mu08,y).detach().cpu().numpy()*100
+            current_mse08 = metrics.MSE(mu08,y).detach().cpu().numpy()#*100
             mse08 = list(map(add, current_mse08, mse08))
 
-            current_mse1 = metrics.MSE(mu1,y).detach().cpu().numpy()*100
+            current_mse1 = metrics.MSE(mu1,y).detach().cpu().numpy()#*100
             mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
@@ -363,28 +364,28 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_mae05 = metrics.MAE(mu05,y).detach().cpu().numpy() * 100
+            current_mae05 = metrics.MAE(mu05,y).detach().cpu().numpy() # * 100
             mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(mu08,y).detach().cpu().numpy() * 100
+            current_mae08 = metrics.MAE(mu08,y).detach().cpu().numpy() # * 100
             mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(mu1,y).detach().cpu().numpy() * 100
+            current_mae1 = metrics.MAE(mu1,y).detach().cpu().numpy() # * 100
             mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
             # current_rmse0 = metrics.RMSE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_rmse0 = metrics.RMSE(mu0,y) * 100
+            current_rmse0 = metrics.RMSE(mu0,y)#  * 100
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
             print('Current RMSE', current_rmse0[0].item())
 
-            current_rmse05 = metrics.RMSE(mu05,y) * 100
+            current_rmse05 = metrics.RMSE(mu05,y) #* 100
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(mu08,y) * 100
+            current_rmse08 = metrics.RMSE(mu08,y) #* 100
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(mu1,y)*100
+            current_rmse1 = metrics.RMSE(mu1,y)#*100
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
             # MMD
@@ -415,7 +416,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             print('Visualize results ...')
 
             # Visualize low resolution GT
-            grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
+            grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
@@ -425,7 +426,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             # Visualize High-Res GT
-            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
+            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
@@ -434,7 +435,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
-            grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), nrow=3)
+            grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
@@ -442,7 +443,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + "mu_0_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
-            grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), nrow=3)
+            grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
@@ -450,7 +451,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + "mu_0.5_logstep_{}_test.png".format(batch_idx), dpi=300, bbox_inches='tight')
             plt.close()
 
-            grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), nrow=3)
+            grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
@@ -458,7 +459,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + "mu_0.8_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
 
-            grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), nrow=3)
+            grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
             plt.axis('off')
@@ -467,7 +468,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.close()
 
             abs_err = torch.abs(mu08 - y)
-            grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+            grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
             plt.figure()
             plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=color)
             plt.axis('off')
@@ -691,9 +692,12 @@ if __name__ == "__main__":
     args.device = "cuda"
 
     # Load Model
-    # temperature
-    modelname = 'model_epoch_4_step_29000'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
+    # temperature 2x
+    # modelname = 'model_epoch_4_step_29000'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_2_step_7500'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/srflow_era5-T2M_2023_11_07_12_13_13_2x/models/{}.tar'.format(modelname)
+
     # watercontent 4x upsampling
 
     # watercontent 2x upsampling
@@ -717,8 +721,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    plot_std(model, test_loader, exp_name, modelname, args)
+    # plot_std(model, test_loader, exp_name, modelname, args)
     # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    # test(model, test_loader, exp_name, modelname, -99999, args)
+    test(model, test_loader, exp_name, modelname, -99999, args)
