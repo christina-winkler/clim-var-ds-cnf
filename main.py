@@ -102,7 +102,7 @@ def main(args):
 
     if args.modeltype == "srgan":
         # generator = srgan.Generator(in_channels, args.s)
-        generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+        generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=8)
         # generator = srgan.ResNet(in_channels, noise=True, number_residual_blocks=8, upsampling_factor=args.s)
         discriminator = srgan.Discriminator(in_channels)
         model = (generator, discriminator)

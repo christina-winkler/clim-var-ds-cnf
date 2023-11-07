@@ -61,5 +61,5 @@ class ERA5WTCData(Dataset):
             x[0,0,...] = resize(y[0,0,...], (y.shape[2]//2, y.shape[3]//2), anti_aliasing=True)
             transf = transforms.ToTensor()
             x = transf(x[0,...]).permute(1,2,0).unsqueeze(0).type(torch.FloatTensor)
-
-        return y.squeeze(0), x.squeeze(0) # normalized: self.transform(y).squeeze(1), self.transform(x).squeeze(1)
+            
+        return self.transform(y).squeeze(1), self.transform(x).squeeze(1)

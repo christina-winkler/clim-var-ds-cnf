@@ -86,10 +86,8 @@ class ERA5T2MData(Dataset):
         self.data = xr.open_zarr(self.data_path)['t2m']
 
         if self.transform is None:
-            self.transform_x = transforms.Compose([XRToTensor()]) # transforms.ToTensor()]) ,
-                                                 # MinMaxScaler(values_range=(0, 1))])
-            self.transform_y = transforms.Compose([XRToTensor()]) #transforms.Compose([transforms.ToTensor()])#, #XRToTensor(),
-                                                 # MinMaxScaler(values_range=(0, 1))])
+            self.transform_x = transforms.Compose([transforms.ToTensor(), MinMaxScaler(values_range=(0, 1))])
+            self.transform_y = transforms.Compose([transforms.ToTensor(), MinMaxScaler(values_range=(0, 1))])
 
     def __len__(self):
         return len(self.data)
@@ -104,7 +102,7 @@ class ERA5T2MData(Dataset):
         y = y.values
         # x = resize(y, (y.shape[0]//4, y.shape[1]//4), anti_aliasing=True)
         x = resize(y, (y.shape[0]//self.s, y.shape[1]//self.s), anti_aliasing=True)
-        return torch.FloatTensor(y).unsqueeze(0), torch.FloatTensor(x).unsqueeze(0) #self.transform_y(y).squeeze(1), self.transform_x(x).squeeze(1), y, x #, str(time), latitude, longitude
+        return self.transform_y(y).squeeze(1), self.transform_x(x).squeeze(1), y, x #, str(time), latitude, longitude
 
 # datashape = ERA5T2MData('/home/christina/Documents/research/auto-encoding-normalizing-flows/code/data/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr')[0][0].shape
 # temperatures, time = ERA5T2MData('/home/christina/Documents/research/auto-encoding-normalizing-flows/code/data/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr')[0]
