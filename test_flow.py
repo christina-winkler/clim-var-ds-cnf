@@ -124,7 +124,7 @@ def plot_std(model, test_loader, exp_name, modelname, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2].to(args.device)
+            y_unorm = item[2].to(args.device)
             x_unnorm = item[3].to(args.device)
 
             mu0,_,_ = model(xlr=x, reverse=True, eps=0.0000000000000000001)
@@ -277,8 +277,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unnorm = item[2].unsqueeze(1).to(args.device)
-            x_unnorm = item[3].unsqueeze(1).to(args.device)
+            y_unorm = item[2].unsqueeze(1).to(args.device)
+            x_unorm = item[3].unsqueeze(1).to(args.device)
 
             z, nll = model.forward(x_hr=y, xlr=x)
 
@@ -295,7 +295,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             print("Evaluate Predictions on visual metrics... ")
 
             # # SSIM
-            # current_ssim_mu0 = metrics.ssim(inv_scaler(mu0), y_unnorm)
+            # current_ssim_mu0 = metrics.ssim(inv_scaler(mu0), y_unorm)
             # print('Current SSIM', current_ssim_mu0.item())
             # ssim0.append(current_ssim_mu0.cpu().numpy())
             # pd.Series(ssim0).hist()
@@ -304,17 +304,17 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # plt.savefig(savedir_viz + '/ssim0_density.png', dpi=300, bbox_inches='tight')
             # plt.close()
             #
-            # current_ssim_mu05 = metrics.ssim(inv_scaler(mu05), y_unnorm)
+            # current_ssim_mu05 = metrics.ssim(inv_scaler(mu05), y_unorm)
             # ssim05.append(current_ssim_mu05.cpu())
             #
-            # current_ssim_mu08 = metrics.ssim(inv_scaler(mu08), y_unnorm)
+            # current_ssim_mu08 = metrics.ssim(inv_scaler(mu08), y_unorm)
             # ssim08.append(current_ssim_mu08.cpu())# = list(map(add, current_ssim_mu08, ssim08))
             #
-            # current_ssim_mu1 = metrics.ssim(inv_scaler(mu1), y_unnorm)
+            # current_ssim_mu1 = metrics.ssim(inv_scaler(mu1), y_unorm)
             # ssim1.append(current_ssim_mu1.cpu()) # = list(map(add, current_ssim_mu1, ssim1))
             #
             # # PSNR
-            # current_psnr_mu0 = metrics.psnr(inv_scaler(mu0), y_unnorm)
+            # current_psnr_mu0 = metrics.psnr(inv_scaler(mu0), y_unorm)
             # # current_psnr_mu0 = metrics.psnr(mu0, y)
             # psnr0.append(current_psnr_mu0) # list(map(add, current_psnr_mu0, psnr0))
             # print('Current PSNR', current_psnr_mu0)
@@ -325,35 +325,35 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # plt.savefig(savedir_viz + '/psnr0_density.png', dpi=300, bbox_inches='tight')
             # plt.close()
             #
-            # current_psnr_mu05 = metrics.psnr(inv_scaler(mu05), y_unnorm)
+            # current_psnr_mu05 = metrics.psnr(inv_scaler(mu05), y_unorm)
             # # current_psnr_mu05 = metrics.psnr(mu05, y)
             # psnr05.append(current_psnr_mu05) #= list(map(add, current_psnr_mu05, psnr05))
             #
             # # current_psnr_mu08 = metrics.psnr(mu08, y)
-            # current_psnr_mu08 = metrics.psnr(inv_scaler(mu08), y_unnorm)
+            # current_psnr_mu08 = metrics.psnr(inv_scaler(mu08), y_unorm)
             # psnr08.append(current_psnr_mu08) # = list(map(add, current_psnr_mu08, psnr08))
             #
             # # current_psnr_mu1 = metrics.psnr(mu1, y)
-            # current_psnr_mu1 = metrics.psnr(inv_scaler(mu1), y_unnorm)
+            # current_psnr_mu1 = metrics.psnr(inv_scaler(mu1), y_unorm)
             # psnr1.append(current_psnr_mu1) # = list(map(add, current_psnr_mu1, psnr1))
 
             # MSE
-            current_mse0 = metrics.MSE(inv_scaler(mu0), y_unnorm).detach().cpu().numpy()
+            current_mse0 = metrics.MSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
             # current_mse0 = metrics.MSE(mu0, y).detach().cpu().numpy()*100
             mse0 = list(map(add, current_mse0, mse0))
-            print('Current MSE', current_mse0.item())
+            print('Current MSE', current_mse0[0])
 
-            current_mse05 = metrics.MSE(mu05, y).detach().cpu().numpy()#*100
+            current_mse05 = metrics.MSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
             mse05 = list(map(add, current_mse05, mse05))
 
-            current_mse08 = metrics.MSE(mu08,y).detach().cpu().numpy()#*100
+            current_mse08 = metrics.MSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
             mse08 = list(map(add, current_mse08, mse08))
 
-            current_mse1 = metrics.MSE(mu1,y).detach().cpu().numpy()#*100
+            current_mse1 = metrics.MSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()#*100
             mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
-            current_mae0 = metrics.MAE(inv_scaler(mu0),y_unnorm).detach().cpu().numpy()
+            current_mae0 = metrics.MAE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
             # current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
             mae0.append(current_mae0) # = list(map(add, current_mae0.cpu().numpy(), mae0))
             print('Current MAE', current_mae0.item())
@@ -364,42 +364,42 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
             plt.close()
 
-            current_mae05 = metrics.MAE(mu05,y).detach().cpu().numpy() # * 100
+            current_mae05 = metrics.MAE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy() # * 100
             mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
 
-            current_mae08 = metrics.MAE(mu08,y).detach().cpu().numpy() # * 100
+            current_mae08 = metrics.MAE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy() # * 100
             mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
 
-            current_mae1 = metrics.MAE(mu1,y).detach().cpu().numpy() # * 100
+            current_mae1 = metrics.MAE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy() # * 100
             mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
-            # current_rmse0 = metrics.RMSE(inv_scaler(mu0,y_unnorm),y_unnorm)
-            current_rmse0 = metrics.RMSE(mu0,y)#  * 100
+            current_rmse0 = metrics.RMSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm)
+            # current_rmse0 = metrics.RMSE(mu0, y)#  * 100
             rmse0 = list(map(add, current_rmse0.cpu().numpy(), mse0))
             print('Current RMSE', current_rmse0[0].item())
 
-            current_rmse05 = metrics.RMSE(mu05,y) #* 100
+            current_rmse05 = metrics.RMSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm) #* 100
             rmse05 = list(map(add, current_rmse05.cpu().numpy(), mse05))
 
-            current_rmse08 = metrics.RMSE(mu08,y) #* 100
+            current_rmse08 = metrics.RMSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm) #* 100
             rmse08 = list(map(add, current_rmse08.cpu().numpy(), mse08))
 
-            current_rmse1 = metrics.RMSE(mu1,y)#*100
+            current_rmse1 = metrics.RMSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)#*100
             rmse1 = list(map(add, current_rmse1.cpu().numpy(), mse1))
 
             # MMD
-            current_mmd0 = metrics.MMD(inv_scaler(mu0),y_unnorm)
-            mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
-
-            current_mmd05 = metrics.MMD(inv_scaler(mu05),y_unnorm)
-            mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
-
-            current_mmd08 = metrics.MMD(inv_scaler(mu08),y_unnorm)
-            mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
-
-            current_mmd1 = metrics.MMD(inv_scaler(mu1),y_unnorm)
-            mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
+            # current_mmd0 = metrics.MMD(inv_scaler(mu0,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
+            # mmd0 = list(map(add, current_mmd0.cpu().numpy(), mmd0))
+            #
+            # current_mmd05 = metrics.MMD(inv_scaler(mu05,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
+            # mmd05 = list(map(add, current_mmd05.cpu().numpy(), mmd05))
+            #
+            # current_mmd08 = metrics.MMD(inv_scaler(mu08,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
+            # mmd08 = list(map(add, current_mmd08.cpu().numpy(), mmd08))
+            #
+            # current_mmd1 = metrics.MMD(inv_scaler(mu1s,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
+            # mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
             crps = []
             for i in range(8):
@@ -408,7 +408,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
 
             mu0crps = torch.stack(crps, dim=1)
 
-            current_crps = metrics.crps_ensemble(y_unnorm, mu0crps)
+            current_crps = metrics.crps_ensemble(y_unorm, mu0crps)
             # crps0 = list(map(add, current_crps, crps0))
             crps0 += current_crps
             print('Current CRPS', current_crps[0])
