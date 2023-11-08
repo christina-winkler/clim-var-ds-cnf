@@ -277,7 +277,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             y = item[0].to(args.device)
             x = item[1].to(args.device)
 
-            y_unorm = item[2].unsqueeze(1).to(args.device)
+            y_unorm = item[2].to(args.device)
             x_unorm = item[3].unsqueeze(1).to(args.device)
 
             z, nll = model.forward(x_hr=y, xlr=x)
@@ -413,6 +413,9 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # crps0 = list(map(add, current_crps, crps0))
             crps0 += current_crps
             print('Current CRPS', current_crps[0])
+
+            if batch_idx ==20:
+                break
 
             print('Visualize results ...')
 
@@ -597,8 +600,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         # f.write('Avrg MMD mu1:\n')
         # f.write("%f \n" %np.mean(avrg_mmd1))
         #
-        # f.write('Avrg CRPS mu0:\n')
-        # f.write("%f \n" %np.mean(avrg_crps))
+        f.write('Avrg CRPS mu0:\n')
+        f.write("%f \n" %np.mean(avrg_crps))
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
     print("Average Fwd. runtime", np.mean(avrg_fwd_time))
@@ -694,20 +697,23 @@ if __name__ == "__main__":
 
     # Load Model
     # temperature 2x
-    # modelname = 'model_epoch_4_step_29000'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
-    modelname = 'model_epoch_2_step_7500'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/srflow_era5-T2M_2023_11_07_12_13_13_2x/models/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_2_step_7500'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/srflow_era5-T2M_2023_11_07_12_13_13_2x/models/{}.tar'.format(modelname)
 
-    # watercontent 4x upsampling
+    # temperature 4x
+    # modelname = 'model_epoch_5_step_19750'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_5_step_19750_era5-T2M_4x/models/{}.tar'.format(modelname)
 
     # watercontent 2x upsampling
-    # modelname = 'model_epoch_1_step_25000'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_10_17_06_05/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_5_step_19750'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_5_step_19750_era5-T2M_2x/models/{}.tar'.format(modelname)
 
-    # 4x upsampling
-    # modelname = 'model_epoch_2_step_27000'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_28_22_36_08_4x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_4_step_29000'
+    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
+
+    # 4x upsampling watercontent
+    modelname = 'model_epoch_4_step_30250'
+    modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_4_step_29000_era5-TCW/models/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
@@ -722,8 +728,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    # plot_std(model, test_loader, exp_name, modelname, args)
+    plot_std(model, test_loader, exp_name, modelname, args)
     # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    test(model, test_loader, exp_name, modelname, -99999, args)
+    # test(model, test_loader, exp_name, modelname, -99999, args)
