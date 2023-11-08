@@ -119,8 +119,8 @@ def trainer(args, train_loader, valid_loader, model,
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 
-            y = Variable(minmax_scaler(item[0].to(device), args))
-            x = Variable(minmax_scaler(item[1].to(device), args))
+            y = item[0].to(device)
+            x = item[1].to(device)
 
             generator.zero_grad()
             fake_img=generator(x)
