@@ -103,142 +103,15 @@ if torch.cuda.is_available():
 else:
     args.device = "cpu"
 
-
 def inv_scaler(x, min_value=0, max_value=100):
     x = x * (max_value - min_value) + min_value
     return x
 
-def plot_std(model):
+def extreme_val_exp(model, test_loader, exp_name, modelname, logstep, args):
+
+
+
     return None
-
-def test(model, test_loader, exp_name, modelname, args):
-    
-        random.seed(0)
-        torch.manual_seed(0)
-        np.random.seed(0)
-
-        torch.backends.cudnn.deterministic = True
-        torch.backends.cudnn.benchmark = False
-
-        nll_list=[]
-
-        avrg_fwd_time = []
-        avrg_bw_time = []
-
-        mse = []
-        mae = []
-        rmse = [] 
-        crps = [] 
-
-        color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-        savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
-        savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
-
-        os.makedirs(savedir_viz, exist_ok=True)
-        os.makedirs(savedir_txt, exist_ok=True)
-
-        generator.eval()
-
-        mse_loss_list = []
-        mse_loss = nn.MSELoss()
-
-        with torch.no_grad():
-            for batch_idx, item in enumerate(test_loader):
-
-                y = item[0].to(args.device)
-                x = item[1].to(args.device)
-
-                y_unorm = item[2].to(args.device)
-                x_unorm = item[3].to(args.device)
-
-                fake_img = generator(x)
-
-                g_loss = mse_loss(fake_img, y)
-                    
-                # Generative loss
-                mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
-
-
-                print("Evaluate Predictions on visual metrics... ")
-
-                # MAE
-                mae.append(metrics.MAE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
-                    
-                print('Current MAE', np.mean(mae),mae[-1])
-
-                mse.append(metrics.MSE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).mean().detach().cpu().numpy())
-                print('Current MSE', np.mean(mse), mse[-1])
-            
-                # RMSE
-                rmse.append(metrics.RMSE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
-                print('Current RMSE', np.mean(rmse), rmse[-1])
-
-                # CRPS
-                imgs = []
-                for i in range(8):
-                    img = generator(x)
-                    imgs.append(inv_scaler(img, min_value=y_unorm.min(), max_value=y_unorm.max()))
-
-                crps_stack = torch.stack(imgs, dim=1)
-
-                crps.append(metrics.crps_ensemble(y_unorm, crps_stack))
-
-                print('Current CRPS', np.mean(crps))
-
-                print('Visualize results ...')
-
-                # Visualize low resolution GT
-                grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), normalize=True, nrow=3)
-                plt.figure()
-                plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
-                plt.axis('off')
-                # plt.title("Low-Res GT (train)")
-                # plt.show()
-                plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-                plt.close()
-
-                # Visualize High-Res GT
-                grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), normalize=True, nrow=3)
-                plt.figure()
-                plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
-                plt.axis('off')
-                # plt.title("High-Res GT")
-                # plt.show()
-                plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-                plt.close()
-
-                grid_pred = torchvision.utils.make_grid(fake_img[0:9,:,:,:].cpu(), normalize=True, nrow=3)
-                plt.figure()
-                plt.imshow(grid_pred.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
-                plt.axis('off')
-                # plt.title("Prediction (test),")
-                plt.savefig(savedir_viz + "y_hat_logstep_{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
-                plt.close()
-
-                abs_err = torch.abs(fake_img - y)
-                grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
-                plt.figure()
-                plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=color)
-                plt.axis('off')
-                # plt.title("Abs Err")
-                plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-                plt.close()
-
-        # Write metric results to a file in case to recreate plots
-        with open(savedir_txt + 'metric_results.txt','w') as f:
-            f.write('MAE:\n')
-            f.write("%f \n" %np.mean(mae))
-            f.write("%f \n" %np.std(mae))
-
-            f.write('RMSE:\n')
-            f.write("%f \n" %np.mean(rmse))
-            f.write("%f \n" %np.std(rmse))
-
-            f.write('CRPS:\n')
-            f.write("%f \n" %np.mean(crps))
-            f.write("%f \n" %np.std(crps))
-        
-        return None
 
 if __name__ == "__main__":
 
@@ -251,7 +124,17 @@ if __name__ == "__main__":
     generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
     # disc_net = srgan.Discriminator(in_channels)
 
-    # Load model
+    # Load condNF model
+    cnf = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
+                           args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+
+    print(torch.cuda.device_count())
+    ckpt = torch.load(modelpath, map_location='cuda:0')
+    cnf.load_state_dict(ckpt['model_state_dict'])
+    cnf.eval()   
+
+
+    # Load GAN model
     # 2x watercontent
     # modelname = 'generator_epoch_3_step_9500'
     # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
@@ -264,10 +147,6 @@ if __name__ == "__main__":
     generator.load_state_dict(ckpt['model_state_dict'])
     generator.eval()
 
-    params = sum(x.numel() for x in generator.parameters() if x.requires_grad)
-    print('Nr of Trainable Params {}:  '.format(args.device), params)
-    generator = generator.to(args.device)
 
     exp_name = "srgan-{}-{}x".format(args.trainset, args.s)
     test(generator, test_loader, exp_name, modelname, args)
-
