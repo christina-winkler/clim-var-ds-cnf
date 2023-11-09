@@ -110,6 +110,75 @@ def inv_scaler(x, min_value=0, max_value=100):
     # return
     return x
 
+def test(discriminator, generator, test_loader, exp_name. modelname, args):
+
+    random.seed(0)
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    nll_list=[]
+
+    avrg_fwd_time = []
+    avrg_bw_time = []
+
+    mse0 = [0] * args.bsz
+    mse1 = [0] * args.bsz
+    mse2 = [0] * args.bsz
+    mse3 = [0] * args.bsz
+
+    mae0 = [0] * args.bsz
+    mae1 = [0] * args.bsz
+    mae2 = [0] * args.bsz
+    mae3 = [0] * args.bsz
+
+    rmse0 = [0] * args.bsz
+    rmse1 = [0] * args.bsz
+    rmse2 = [0] * args.bsz
+    rmse3 = [0] * args.bsz
+
+    crps0 = [0] * args.bsz
+
+    color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
+    savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
+    savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
+
+    os.makedirs(savedir_viz, exist_ok=True)
+    os.makedirs(savedir_txt, exist_ok=True)
+
+    discriminator.eval()
+    generator.eval()
+
+    mse_loss_list = []
+    mse_loss = nn.MSELoss()
+    bce_loss = nn.BCELoss()
+
+    with torch.no_grad():
+        for batch_idx, item in enumerate(val_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            fake_img=generator(x)
+            fake_out = discriminator(fake_img).mean()
+            real_out = discriminator(y).mean()
+
+            g_loss = mse_loss(fake_img, y)
+            
+            # Generative loss
+            mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
+
+            print("Evaluate Predictions on visual metrics... ")        
+
+
+
+
+
+
+
+    return None
 
 if __name__ == "__main__":
 

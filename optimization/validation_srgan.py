@@ -50,14 +50,15 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            y = Variable(minmax_scaler(item[0].to(args.device), args))
-            x = Variable(minmax_scaler(item[1].to(args.device), args))
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
 
             fake_img=generator(x)
             fake_out = discriminator(fake_img).mean()
             real_out = discriminator(y).mean()
 
             g_loss = mse_loss(fake_img, y)
+            
             # Generative loss
             mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
 
