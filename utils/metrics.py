@@ -46,7 +46,7 @@ def RMSE(yhat,y):
 def MSE(y_hat, y):
     _,_,h,w=y.shape
     diff = (y_hat - y)**2
-    sum = (diff**2).sum(dim=[1,2,3])
+    sum = (diff).sum(dim=[1,2,3])
     return sum/(h*w)
 
 def MAE(y_hat, y):

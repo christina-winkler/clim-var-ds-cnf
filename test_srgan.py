@@ -1,5 +1,6 @@
 import numpy as np
 import torch
+import torch.nn as nn
 import random
 
 import PIL
@@ -25,7 +26,7 @@ import timeit
 import pdb
 import seaborn as sns
 
-from models.architectures import srgan
+from models.architectures import srgan, srgan2
 from utils import metrics, wasserstein
 from geomloss import SamplesLoss
 from operator import add
@@ -85,7 +86,7 @@ parser.add_argument("--condch", type=int, default=128//8,
                     help="# of residual-in-residual blocks in LR network.")
 
 # data
-parser.add_argument("--datadir", type=str, default="data",
+parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
                     help="Dataset to train the model on.")
 parser.add_argument("--trainset", type=str, default="era5-TCW", help='[era5-TCW, era5-T2M]')
 parser.add_argument("--testset", type=str, default="era5-TCW",
@@ -110,75 +111,92 @@ def inv_scaler(x, min_value=0, max_value=100):
     # return
     return x
 
-def test(discriminator, generator, test_loader, exp_name. modelname, args):
+def test(model, test_loader, exp_name, modelname, args):
+    
+        random.seed(0)
+        torch.manual_seed(0)
+        np.random.seed(0)
 
-    random.seed(0)
-    torch.manual_seed(0)
-    np.random.seed(0)
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+        nll_list=[]
 
-    nll_list=[]
+        avrg_fwd_time = []
+        avrg_bw_time = []
 
-    avrg_fwd_time = []
-    avrg_bw_time = []
+        mse = [0] * args.bsz
 
-    mse0 = [0] * args.bsz
-    mse1 = [0] * args.bsz
-    mse2 = [0] * args.bsz
-    mse3 = [0] * args.bsz
+        mae = [0] * args.bsz
 
-    mae0 = [0] * args.bsz
-    mae1 = [0] * args.bsz
-    mae2 = [0] * args.bsz
-    mae3 = [0] * args.bsz
+        rmse = [0] * args.bsz
 
-    rmse0 = [0] * args.bsz
-    rmse1 = [0] * args.bsz
-    rmse2 = [0] * args.bsz
-    rmse3 = [0] * args.bsz
+        crps = [0] * args.bsz
 
-    crps0 = [0] * args.bsz
+        color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
+        savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
+        savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
 
-    color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-    savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
-    savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
+        os.makedirs(savedir_viz, exist_ok=True)
+        os.makedirs(savedir_txt, exist_ok=True)
 
-    os.makedirs(savedir_viz, exist_ok=True)
-    os.makedirs(savedir_txt, exist_ok=True)
+        generator.eval()
 
-    discriminator.eval()
-    generator.eval()
+        mse_loss_list = []
+        mse_loss = nn.MSELoss()
 
-    mse_loss_list = []
-    mse_loss = nn.MSELoss()
-    bce_loss = nn.BCELoss()
+        with torch.no_grad():
+            for batch_idx, item in enumerate(test_loader):
 
-    with torch.no_grad():
-        for batch_idx, item in enumerate(val_loader):
+                y = item[0].to(args.device)
+                x = item[1].to(args.device)
 
-            y = item[0].to(args.device)
-            x = item[1].to(args.device)
+                y_unorm = item[2].to(args.device)
+                x_unorm = item[3].to(args.device)
 
-            fake_img=generator(x)
-            fake_out = discriminator(fake_img).mean()
-            real_out = discriminator(y).mean()
+                fake_img = generator(x)
 
-            g_loss = mse_loss(fake_img, y)
+                g_loss = mse_loss(fake_img, y)
+                    
+                # Generative loss
+                mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
+
+
+                print("Evaluate Predictions on visual metrics... ")
+
+                # MAE
+                mae.append(metrics.MAE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+                    
+                print('Current MAE', np.mean(mae),mae[-1])
+
+                mse.append(metrics.MSE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).mean().detach().cpu().numpy())
+                print('Current MSE', np.mean(mse), mse[-1])
             
-            # Generative loss
-            mse_loss_list.append(g_loss.mean().detach().cpu().numpy())
-
-            print("Evaluate Predictions on visual metrics... ")        
-
+                # RMSE
+                rmse.append(metrics.RMSE(inv_scaler(fake_img, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+                print('Current RMSE', np.mean(rmse), rmse[-1])
 
 
+                # CRPS
+                crps = []
+                for i in range(8):
+                    currmu = generator(x)
+                    crps.append(inv_scaler(currmu, min_value=y_unorm.min(), max_value=y_unorm.max()))
 
+                crps_stack = torch.stack(crps, dim=1)
 
+                current_crps = metrics.crps_ensemble(y_unorm, crps_stack)
 
+                print('Current CRPS', current_crps[0])
 
-    return None
+            # compute mean and std of scores over whole dataset ( TODO: sample uncertainty can also be evaluated, do this in another function)
+
+            mae_std = np.std(mae)
+            mae_mean = np.mean(mae)      
+
+            print(mae_mean, mae_std)
+        
+        return None
 
 if __name__ == "__main__":
 
@@ -188,17 +206,21 @@ if __name__ == "__main__":
     args.height, args.width = next(iter(test_loader))[0].shape[2], next(iter(test_loader))[0].shape[3]
 
     # init model
-    model = srgan.Generator(in_channels, args.s)
+    generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
     # disc_net = srgan.Discriminator(in_channels)
 
     # Load model
-    modelname = 'generator_epoch_0_step_25'
-    gen_modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_10_26_15_05_07/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'generator_epoch_3_step_9500'
+    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
 
     ckpt = torch.load(gen_modelpath)
-    model.load_state_dict(ckpt['model_state_dict'])
-    model.eval()
+    generator.load_state_dict(ckpt['model_state_dict'])
+    generator.eval()
 
-    params = sum(x.numel() for x in model.parameters() if x.requires_grad)
+    params = sum(x.numel() for x in generator.parameters() if x.requires_grad)
     print('Nr of Trainable Params {}:  '.format(args.device), params)
-    model = model.to(args.device)
+    generator = generator.to(args.device)
+
+    exp_name = "srgan-{}-{}x".format(args.trainset, args.s)
+    test(generator, test_loader, exp_name, modelname, args)
+
