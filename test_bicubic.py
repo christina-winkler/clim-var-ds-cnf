@@ -121,8 +121,16 @@ def test(test_loader, args, exp_name='basline'):
     torch.backends.cudnn.benchmark = False
 
     color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-    savedir_viz = "experiments/{}_{}/snapshots/test/".format(exp_name, args.trainset)    
+    savedir_viz = "experiments/{}_{}/snapshots/test/".format(exp_name, args.trainset)
+    savedir_txt = 'experiments/{}_{}/'.format(exp_name, args.trainset)
+    
+    os.makedirs(savedir_txt, exist_ok=True)     
     os.makedirs(savedir_viz, exist_ok=True)    
+    
+    mse = []
+    mae = []
+    rmse = [] 
+
     with torch.no_grad():
         for batch_idx, item in enumerate(test_loader):
 
@@ -166,6 +174,47 @@ def test(test_loader, args, exp_name='basline'):
             # plt.title("Prediction at t (test), mu=0")
             plt.savefig(savedir_viz + "y_hat{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
             plt.close()
+
+            abs_err = torch.abs(inv_scaler(y_hat, y_unorm.min(), y_unorm.max()) - y_unorm)
+            grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
+            plt.figure()
+            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='magma')
+            plt.axis('off')
+            # plt.title("Abs Err")
+            plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            print("Evaluate Predictions on visual metrics... ")
+
+            # MAE
+            mae.append(metrics.MAE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+                   
+            print('Current MAE', np.mean(mae),mae[-1])
+
+            mse.append(metrics.MSE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).mean().detach().cpu().numpy())
+            print('Current MSE', np.mean(mse), mse[-1])
+            
+            # RMSE
+            rmse.append(metrics.RMSE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+            print('Current RMSE', np.mean(rmse), rmse[-1])
+
+            if batch_idx == 3:
+                break
+
+        # Write metric results to a file in case to recreate plots
+        with open(savedir_txt + 'metric_results.txt','w') as f:
+            f.write('MAE:\n')
+            f.write("%f \n" %np.mean(mae))
+            f.write("%f \n" %np.std(mae))
+
+            f.write('RMSE:\n')
+            f.write("%f \n" %np.mean(rmse))
+            f.write("%f \n" %np.std(rmse))
+
+            f.write('CRPS:\n')
+            f.write("%f \n" %np.mean(crps))
+            f.write("%f \n" %np.std(crps))
+
 
 if __name__ == "__main__":
 
