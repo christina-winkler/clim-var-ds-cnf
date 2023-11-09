@@ -1,6 +1,5 @@
 import numpy as np
 import torch
-import torch.nn as nn
 import random
 
 import PIL
@@ -14,6 +13,14 @@ import pandas as pd
 import sys
 sys.path.append("../../")
 
+# seeding only for debugging
+# random.seed(0)
+# torch.manual_seed(0)
+# np.random.seed(0)
+
+# torch.backends.cudnn.deterministic = True
+# torch.backends.cudnn.benchmark = False
+
 # Dataset loading
 from data import dataloading
 from data.era5_temp_dataset import InverseMinMaxScaler
@@ -26,13 +33,15 @@ import timeit
 import pdb
 import seaborn as sns
 
-from models.architectures import srgan, srgan2
+from models.architectures import srflow
 from utils import metrics, wasserstein
 from geomloss import SamplesLoss
 from operator import add
 from scipy import ndimage
-parser = argparse.ArgumentParser()
+import skimage
+import cv2
 
+parser = argparse.ArgumentParser()
 
 # train configs
 parser.add_argument("--model", type=str, default="srflow",
@@ -72,7 +81,7 @@ parser.add_argument("--crop_size", type=int, default=500,
                     help="Crop size when random cropping is applied.")
 parser.add_argument("--patch_size", type=int, default=500,
                     help="Training patch size.")
-parser.add_argument("--bsz", type=int, default=16, help="batch size")
+parser.add_argument("--bsz", type=int, default=1, help="batch size")
 parser.add_argument("--lr", type=float, default=0.0002,
                     help="learning rate")
 parser.add_argument("--filter_size", type=int, default=512,
@@ -94,61 +103,78 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 
 args = parser.parse_args()
 
-
-if torch.cuda.is_available():
-    args.device = torch.device("cuda")
-    args.num_gpus = torch.cuda.device_count()
-    args.parallel = False
-
-else:
-    args.device = "cpu"
-
 def inv_scaler(x, min_value=0, max_value=100):
+    # min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
+    # max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
     x = x * (max_value - min_value) + min_value
+    # return
     return x
 
-def extreme_val_exp(model, test_loader, exp_name, modelname, logstep, args):
+
+def test(test_loader, args, exp_name='basline'):
+
+    random.seed(0)
+    torch.manual_seed(0)
+    np.random.seed(0)
+
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
+
+    color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
+    savedir_viz = "experiments/{}_{}/snapshots/test/".format(exp_name, args.trainset)    
+    os.makedirs(savedir_viz, exist_ok=True)    
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
 
 
+            y = item[0]
+            x = item[1]
 
-    return None
+            y_unorm = item[2]
+            x_unorm = item[3].unsqueeze(1)
+
+            # y_hat = torch.FloatTensor(skimage.transform.bicubic(y, args.s))
+            # pdb.set_trace()
+            y_hat = cv2.resize(x[0,0,...].cpu().numpy(), dsize=(128,128), interpolation=cv2.INTER_CUBIC)
+            y_hat = torch.FloatTensor(y_hat).unsqueeze(0).unsqueeze(0)
+            # y_hat = cv2.resize(x.cpu().numpy(), fx=args.s, fy=args.s, interpolation=cv2.INTER_CUBIC)
+
+            # Visualize low resolution GT
+            grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :], normalize=True, nrow=3)
+            plt.figure()
+            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
+            plt.axis('off')
+            # plt.title("Low-Res GT (train)")
+            # plt.show()
+            plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            # Visualize High-Res GT
+            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :], normalize=True, nrow=3)
+            plt.figure()
+            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
+            plt.axis('off')
+            # plt.title("High-Res GT")
+            # plt.show()
+            plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            grid_y_hat = torchvision.utils.make_grid(y_hat[0:9,:,:,:], normalize=True, nrow=3)
+            plt.figure()
+            plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
+            plt.axis('off')
+            # plt.title("Prediction at t (test), mu=0")
+            plt.savefig(savedir_viz + "y_hat{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
+            plt.close()
 
 if __name__ == "__main__":
 
     # Load testset
     _, _, test_loader, args = dataloading.load_data(args)
+
     in_channels = next(iter(test_loader))[0].shape[1]
     args.height, args.width = next(iter(test_loader))[0].shape[2], next(iter(test_loader))[0].shape[3]
 
-    # init model
-    generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
-    # disc_net = srgan.Discriminator(in_channels)
+    args.device = "cuda"
 
-    # Load condNF model
-    # 2x watercontent
-    # 4x watercontent
-    cnf = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
-                           args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
-
-    print(torch.cuda.device_count())
-    ckpt = torch.load(modelpath, map_location='cuda:0')
-    cnf.load_state_dict(ckpt['model_state_dict'])
-    cnf.eval()   
-
-
-    # Load GAN model
-    # 2x watercontent
-    # modelname = 'generator_epoch_3_step_9500'
-    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
-
-    # 4x watercontent
-    modelname = 'generator_epoch_6_step_4000'
-    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_09_06_49_00_4x/model_checkpoints/{}.tar'.format(modelname)
-
-    ckpt = torch.load(gen_modelpath)
-    generator.load_state_dict(ckpt['model_state_dict'])
-    generator.eval()
-
-
-    exp_name = "srgan-{}-{}x".format(args.trainset, args.s)
-    test(generator, test_loader, exp_name, modelname, args)
+    test(test_loader, args)

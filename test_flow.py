@@ -92,7 +92,7 @@ parser.add_argument("--condch", type=int, default=128//8,
                     help="# of residual-in-residual blocks in LR network.")
 
 # data
-parser.add_argument("--datadir", type=str, default="data",
+parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
                     help="Dataset to train the model on.")
 parser.add_argument("--trainset", type=str, default="era5-TCW", help='[era5-TCW, era5-T2M]')
 parser.add_argument("--testset", type=str, default="era5-TCW",
@@ -242,10 +242,10 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     mae08 = []  # [0] * args.bsz
     mae1 = [] # [0] * args.bsz
 
-    rmse0 = [0] * args.bsz
-    rmse05 = [0] * args.bsz
-    rmse08 = [0] * args.bsz
-    rmse1 = [0] * args.bsz
+    rmse0 = [] 
+    rmse05 = [] 
+    rmse08 = []
+    rmse1 = [] 
 
     mmd0 = [0] * args.bsz
     mmd0 = [0] * args.bsz
@@ -256,7 +256,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     emd = [0] * args.bsz
     rmse = [0] * args.bsz
 
-    crps0 = [0] * args.bsz
+    crps = [] 
 
     mae0_plot = []
     ssim0_dens = []
@@ -353,40 +353,19 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # mse1 = list(map(add, current_mse1, mse1))
 
             # MAE
-            current_mae0 = metrics.MAE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
-            # current_mae0 = metrics.MAE(mu0,y).detach().cpu().numpy()*100
-            mae0.append(current_mae0) # = list(map(add, current_mae0.cpu().numpy(), mae0))
-            print('Current MAE', current_mae0.item())
-            # mae0_plot.extend(current_mae0.detach().cpu().numpy().tolist())
-            pd.Series(mae0).hist()
-            plt.xlabel('MAE')
-            plt.ylabel('nr samples')
-            plt.savefig(savedir_viz + '/mae0_density.png', dpi=300, bbox_inches='tight')
-            plt.close()
+            mae0.append(metrics.MAE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+            print('Current MAE', np.mean(mae0))
+            mae05.append(metrics.MAE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+            mae08.append(metrics.MAE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+            mae1.append(metrics.MAE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy())
 
-            current_mae05 = metrics.MAE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
-            mae05.append(current_mae05) #list(map(add, current_mae05.cpu().numpy(), mae05))
-
-            current_mae08 = metrics.MAE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
-            mae08.append(current_mae08) #= list(map(add, current_mae08.cpu().numpy(), mae08))
-
-            current_mae1 = metrics.MAE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
-            mae1.append(current_mae1) #= list(map(add, current_mae1.cpu().numpy(), mae1))
 
             # RMSE
-            current_rmse0 = metrics.RMSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy()
-            # current_rmse0 = metrics.RMSE(mu0, y)#  * 100
-            rmse0.append(current_rmse0)
-            print('Current RMSE', current_rmse0)
-
-            current_rmse05 = metrics.RMSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
-            rmse05.append(current_rmse05)
-
-            current_rmse08 = metrics.RMSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
-            rmse08.append(current_rmse08)
-
-            current_rmse1 = metrics.RMSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy()
-            rmse1.append(current_rmse1)
+            rmse0.append(metrics.RMSE(inv_scaler(mu0, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
+            print('Current RMSE', np.mean(rmse0))
+            rmse05.append(metrics.RMSE(inv_scaler(mu05, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy())
+            rmse08.append(metrics.RMSE(inv_scaler(mu08, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy())
+            rmse1.append(metrics.RMSE(inv_scaler(mu1, min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm).detach().cpu().numpy())
 
             # MMD
             # current_mmd0 = metrics.MMD(inv_scaler(mu0,min_value=y_unorm.min(), max_value=y_unorm.max()),y_unorm)
@@ -402,20 +381,18 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
             # mmd1 = list(map(add, current_mmd1.cpu().numpy(), mse1))
 
 
-            crps = []
+            imgs = []
             for i in range(8):
-                currmu, _, _ = model(xlr=x, reverse=True, eps=1.0)
-                crps.append(inv_scaler(currmu))
+                img, _, _ = model(xlr=x, reverse=True, eps=0.8)
+                imgs.append(inv_scaler(img))
 
-            mu0crps = torch.stack(crps, dim=1)
+            crps_stack = torch.stack(imgs, dim=1)
+            crps.append(metrics.crps_ensemble(y_unorm, crps_stack))
 
-            current_crps = metrics.crps_ensemble(y_unorm, mu0crps)
-            # crps0 = list(map(add, current_crps, crps0))
-            crps0 += current_crps
-            print('Current CRPS', current_crps[0])
+            print('Current CRPS', np.mean(crps))
 
-            if batch_idx ==20:
-                break
+            # if batch_idx == 2:
+            #     break
 
             print('Visualize results ...')
 
@@ -517,7 +494,7 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     # avrg_mmd08 = list(map(lambda x: x/len(test_loader), mmd08))
     # avrg_mmd1 = list(map(lambda x: x/len(test_loader),mmd1))
 
-    avrg_crps = list(map(lambda x: x/len(test_loader), crps0))
+    # avrg_crps = list(map(lambda x: x/len(test_loader), crps0))
 
     # Write metric results to a file in case to recreate plots
     with open(savedir_txt + 'metric_results.txt','w') as f:
@@ -562,31 +539,37 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         # f.write("%f \n" %np.mean(avrg_mse1))
 
 
-        f.write('Avrg MAE mu0:\n')
-        f.write("%f \n" %np.mean(avrg_mae0))
+        f.write('MAE mu0:\n')
+        f.write("%f \n" %np.mean(mae0))
+        f.write("%f \n" %np.std(mae0))
 
         f.write('Avrg MAE mu05:\n')
-        f.write("%f \n" %np.mean(avrg_mae05))
+        f.write("%f \n" %np.mean(mae05))
+        f.write("%f \n" %np.std(mae05))
 
         f.write('Avrg MAE mu08:\n')
-        f.write("%f \n" %np.mean(avrg_mae08))
+        f.write("%f \n" %np.mean(mae08))
+        f.write("%f \n" %np.std(mae08))
 
         f.write('Avrg MAE mu1:\n')
-        f.write("%f \n" %np.mean(avrg_mae1))
-
+        f.write("%f \n" %np.mean(mae1))
+        f.write("%f \n" %np.std(mae1))
 
         f.write('Avrg RMSE mu0:\n')
-        f.write("%f \n" %np.mean(avrg_rmse0))
+        f.write("%f \n" %np.mean(rmse0))
+        f.write("%f \n" %np.std(rmse0))
 
         f.write('Avrg RMSE mu05:\n')
-        f.write("%f \n" %np.mean(avrg_rmse05))
+        f.write("%f \n" %np.mean(rmse05))
+        f.write("%f \n" %np.std(rmse05))        
 
         f.write('Avrg RMSE mu08:\n')
-        f.write("%f \n" %np.mean(avrg_rmse08))
+        f.write("%f \n" %np.mean(rmse08))
+        f.write("%f \n" %np.std(rmse08))
 
         f.write('Avrg RMSE mu1:\n')
-        f.write("%f \n" %np.mean(avrg_rmse1))
-
+        f.write("%f \n" %np.mean(rmse1))
+        f.write("%f \n" %np.mean(rmse1))
 
         # f.write('Avrg MMD mu0:\n')
         # f.write("%f \n" %np.mean(avrg_mmd0))
@@ -600,8 +583,9 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
         # f.write('Avrg MMD mu1:\n')
         # f.write("%f \n" %np.mean(avrg_mmd1))
         #
-        f.write('Avrg CRPS mu0:\n')
-        f.write("%f \n" %np.mean(avrg_crps))
+        f.write('CRPS mu08:\n')
+        f.write("%f \n" %np.mean(crps))
+        f.write("%f \n" %np.std(crps))
 
     print("Average Test Neg. Log Probability Mass:", np.mean(nll_list))
     print("Average Fwd. runtime", np.mean(avrg_fwd_time))
@@ -705,15 +689,15 @@ if __name__ == "__main__":
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_5_step_19750_era5-T2M_4x/models/{}.tar'.format(modelname)
 
     # watercontent 2x upsampling
-    # modelname = 'model_epoch_5_step_19750'
-    # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_5_step_19750_era5-T2M_2x/models/{}.tar'.format(modelname)
+    modelname = 'model_epoch_5_step_6500'
+    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_03_07_15_17_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # modelname = 'model_epoch_4_step_29000'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling watercontent
-    modelname = 'model_epoch_4_step_30250'
-    modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_4_step_29000_era5-TCW/models/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_4_step_30250'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/flow-3-level-2-k_model_epoch_4_step_29000_era5-TCW/models/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
@@ -728,8 +712,8 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
-    plot_std(model, test_loader, exp_name, modelname, args)
+    # plot_std(model, test_loader, exp_name, modelname, args)
     # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    # test(model, test_loader, exp_name, modelname, -99999, args)
+    test(model, test_loader, exp_name, modelname, -99999, args)

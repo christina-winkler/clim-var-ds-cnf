@@ -113,13 +113,13 @@ def trainer(args, train_loader, valid_loader, model,
             z, nll = model.forward(x_hr=y, xlr=x)
 
             # reverse loss
-            # y_hat, logdet, logpz = model(xlr=x, reverse=True)
+            y_hat, logdet, logpz = model(xlr=x, reverse=True)
 
             writer.add_scalar("nll_train", nll.mean().item(), step)
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll # + l1(y_hat, y)
+            loss = nll + l1(y_hat, y)
             loss.mean().backward()
 
             # Update model parameters using calculated gradients

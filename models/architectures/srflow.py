@@ -200,7 +200,7 @@ class SRFlow(nn.Module):
         z, logdet, logp_z = self.flow.forward(z=z, xlr=x_lr, eps=eps, logdet=logdet)
 
         # Loss: Z'ks under Gaussian + sum_logdet
-        D = float(np.log(2) * np.prod(x_hr.size()[1:]))
+        # D = float(np.log(2) * np.prod(x_hr.size()[1:]))
         # x_bpd = -(logdet + logp_z) / D
         x_nll = -(logdet + logp_z)
 
