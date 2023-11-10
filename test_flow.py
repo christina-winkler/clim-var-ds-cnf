@@ -689,8 +689,12 @@ if __name__ == "__main__":
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/experiments/flow-3-level-2-k_model_epoch_5_step_19750_era5-T2M_4x/models/{}.tar'.format(modelname)
 
     # watercontent 2x upsampling
-    modelname = 'model_epoch_5_step_6500'
-    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_03_07_15_17_2x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_5_step_6500'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_03_07_15_17_2x/model_checkpoints/{}.tar'.format(modelname)
+
+    # watercontent 2x upsampling + perc loss
+    # modelname = 'model_epoch_1_step_5000'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_09_09_30_46_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # modelname = 'model_epoch_4_step_29000'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
@@ -698,6 +702,10 @@ if __name__ == "__main__":
     # 4x upsampling watercontent
     # modelname = 'model_epoch_4_step_30250'
     # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/flow-3-level-2-k_model_epoch_4_step_29000_era5-TCW/models/{}.tar'.format(modelname)
+
+    # 4x upsampling water content + perc loss
+    modelname = 'model_epoch_6_step_8750'
+    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_10_06_38_01_4x/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)

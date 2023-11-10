@@ -121,8 +121,8 @@ def test(test_loader, args, exp_name='basline'):
     torch.backends.cudnn.benchmark = False
 
     color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-    savedir_viz = "experiments/{}_{}/snapshots/test/".format(exp_name, args.trainset)
-    savedir_txt = 'experiments/{}_{}/'.format(exp_name, args.trainset)
+    savedir_viz = "experiments/{}_{}_{}x/snapshots/test/".format(exp_name, args.trainset, args.s)
+    savedir_txt = 'experiments/{}_{}_{}x/'.format(exp_name, args.trainset, args.s)
     
     os.makedirs(savedir_txt, exist_ok=True)     
     os.makedirs(savedir_viz, exist_ok=True)    
@@ -198,11 +198,12 @@ def test(test_loader, args, exp_name='basline'):
             rmse.append(metrics.RMSE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
             print('Current RMSE', np.mean(rmse), rmse[-1])
 
-            if batch_idx == 3:
-                break
-
         # Write metric results to a file in case to recreate plots
         with open(savedir_txt + 'metric_results.txt','w') as f:
+            f.write('MSE:\n')
+            f.write("%f \n" %np.mean(mse))
+            f.write("%f \n" %np.std(mse))
+
             f.write('MAE:\n')
             f.write("%f \n" %np.mean(mae))
             f.write("%f \n" %np.std(mae))
@@ -211,9 +212,7 @@ def test(test_loader, args, exp_name='basline'):
             f.write("%f \n" %np.mean(rmse))
             f.write("%f \n" %np.std(rmse))
 
-            f.write('CRPS:\n')
-            f.write("%f \n" %np.mean(crps))
-            f.write("%f \n" %np.std(crps))
+
 
 
 if __name__ == "__main__":
