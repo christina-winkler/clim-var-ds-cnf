@@ -17,7 +17,7 @@ import os
 from models.architectures import stflow, srflow, cdiff, srgan, srgan2
 
 # Optimization
-from optimization import trainer_stflow,trainer_cdiff, trainer_srflow, trainer_srgan
+from optimization import trainer_srflow0, trainer_srgan, trainer_srflow_scaddDS, trainer_srflow_addDS, trainer_srflow_multDS, trainer_srflow_softmax, trainer_srflow_perc_loss
 
 # import evaluate
 import test
@@ -76,29 +76,41 @@ def main(args):
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
-        trainer_srflow.trainer(args=args, train_loader=train_loader,
-                               valid_loader=valid_loader,
-                               model=model,
-                               device=args.device)
+        if args.constraint == 'None':
+            trainer_srflow0.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)
 
-    if args.modeltype == "cdiff":
+        elif args.constraint == 'addDS':
+            trainer_srflow_addDS.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)
 
-        model = cdiff.CondDiffusion(input_shape=(in_channels, height, width),
-                                    bsz=args.bsz, s=args.s, nb=args.nb, cond_channels=args.condch,
-                                    trainmode=args.train, device=args.device,
-                                    conditional=True, linear_start=1e-6, linear_end=1e-2,
-                                    noise_sched=args.noise_sched, T=args.gauss_steps)
+        elif args.constraint == 'scaddDS':
+            trainer_srflow_scaddDS.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)
 
-        if args.resume:
-            modelname = 'model_epoch_1_step_53000.tar'
-            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
-            ckpt = torch.load(modelpath)
-            model.load_state_dict(ckpt['model_state_dict'])
+        elif args.constraint == 'multDS':
+            trainer_srflow_multDS.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)
 
-        trainer_cdiff.trainer(args=args, train_loader=train_loader,
-                              valid_loader=valid_loader,
-                              model=model,
-                              device=args.device)
+        elif args.constraint == 'perc':
+            trainer_srflow_perc_loss.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)   
+
+        elif args.constraint == 'softmax':
+            trainer_srflow_softmax.trainer(args=args, train_loader=train_loader,
+                                   valid_loader=valid_loader,
+                                   model=model,
+                                   device=args.device)   
 
     if args.modeltype == "srgan":
         # generator = srgan.Generator(in_channels, args.s)
@@ -159,6 +171,8 @@ if __name__ == "__main__":
                         help="Interval in which results should be logged.")
     parser.add_argument("--val_interval", type=int, default=250,
                         help="Interval in which model should be validated.")
+    parser.add_argument("--constraint", type=str, default='scaddDS',
+                        help="Physical Constraint to be applied during training.")
 
     # runtime configs
     parser.add_argument("--visual", action="store_true",

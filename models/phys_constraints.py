@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torch.autograd import Variable
+import pdb
 
 class MultDownscaleConstraints(nn.Module):
     def __init__(self, upsampling_factor):
@@ -37,8 +38,7 @@ class SoftmaxConstraints(nn.Module):
         out = y*torch.kron(lr*1/sum_y, torch.ones((self.upsampling_factor,self.upsampling_factor)).to('cuda'))
         return out
 
-
- class ScAddDownscaleConstraints(nn.Module):
+class ScAddDownscaleConstraints(nn.Module):
     def __init__(self, upsampling_factor):
         super(ScAddDownscaleConstraints, self).__init__()
         self.pool = torch.nn.AvgPool2d(kernel_size=upsampling_factor)
