@@ -69,6 +69,8 @@ parser.add_argument("--train", action="store_true",
                     help="If model should be trained.")
 parser.add_argument("--resume_training", action="store_true",
                     help="If training should be resumed.")
+parser.add_argument("--constraint", type=str, default='scaddDS',
+                    help="Physical Constraint to be applied during training.")                   
 
 # hyperparameters
 parser.add_argument("--nbits", type=int, default=8,
@@ -264,8 +266,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     rmse0_dens = []
 
     color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-    savedir_viz = "experiments/{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset)
-    savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset)
+    savedir_viz = "experiments/{}_{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset, args.constraint)
+    savedir_txt = 'experiments/{}_{}_{}_{}/'.format(exp_name, modelname, args.trainset, args.constraint)
 
     os.makedirs(savedir_viz, exist_ok=True)
     os.makedirs(savedir_txt, exist_ok=True)
@@ -696,16 +698,33 @@ if __name__ == "__main__":
     # modelname = 'model_epoch_1_step_5000'
     # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_09_09_30_46_2x/model_checkpoints/{}.tar'.format(modelname)
 
+    # 2x upsampling water content + addDS
+    # modelname = 'model_epoch_4_step_10500'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_addDS__2023_11_10_10_53_58_2x/model_checkpoints/{}.tar'.format(modelname)
+    
+    # 4x upsampling water content + addDS
+    # modelname = 'model_epoch_8_step_10250'
+    # modelpath =  '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_addDS__2023_11_13_15_57_11_4x/model_checkpoints/{}.tar'.format(modelname)
+
+    # 2x watercontent None
+    # modelname = 'model_epoch_8_step_10500'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
+
     # modelname = 'model_epoch_4_step_29000'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
 
-    # 4x upsampling watercontent
-    # modelname = 'model_epoch_4_step_30250'
-    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/flow-3-level-2-k_model_epoch_4_step_29000_era5-TCW/models/{}.tar'.format(modelname)
+    # 4x upsampling watercontent None
+    modelname = 'model_epoch_18_step_23000'
+    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_10_11_27_23_4x/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling water content + perc loss
-    modelname = 'model_epoch_6_step_8750'
-    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_10_06_38_01_4x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_6_step_8750'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_11_10_06_38_01_4x/model_checkpoints/{}.tar'.format(modelname)
+
+    # 4x upsampling water content + softmax
+    # modelname = 'model_epoch_9_step_12500'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_softmax__2023_11_10_11_19_16_4x/model_checkpoints/{}.tar'.format(modelname)
+
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)

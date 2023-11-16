@@ -23,7 +23,7 @@ from torch.optim.lr_scheduler import StepLR
 from optimization.validation_srgan import validate
 from typing import Tuple, Callable
 import timeit
-
+from models.phys_constraints import *
 import wandb
 os.environ["WANDB_SILENT"] = "true"
 import sys
@@ -61,7 +61,7 @@ def inv_scaler(x):
 
 
 def trainer(args, train_loader, valid_loader, model,
-            device='cpu', needs_init=True):
+            device='cpu', needs_init=True, constraint='None'):
 
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
     config_dict = vars(args)
@@ -101,6 +101,17 @@ def trainer(args, train_loader, valid_loader, model,
     print("Gen:", paramsG)
     print("Disc:", paramsD)
     params = paramsG + paramsD
+
+    # define constraint
+    if args.constraint == 'addDS':
+        const = AddDownscaleConstraints(args.s)
+
+    elif args.constraint == 'softmax':
+        const = SoftmaxConstraints(args.s)
+
+    elif args.constraint == 'scaddDS':
+        const = ScAddDownscaleConstraints(args.s)
+    
 
     print('Nr of Trainable Params on {}:  '.format(device), params)
 
@@ -145,9 +156,14 @@ def trainer(args, train_loader, valid_loader, model,
             # compute adversarial loss
             adversarial_loss = bce_loss(discriminator(fake_img), real_label.squeeze(1))
 
-            # update generator network parameters
-            perc_loss = mse_loss(fake_img, y)
-            g_loss = perc_loss + 01e-3 * adversarial_loss
+            if args.constraint == 'None':
+                # update generator network parameters
+                perc_loss = mse_loss(fake_img, y)
+            else:
+                y_hat = const(fake_img, x)
+                perc_loss = mse_loss(y_hat, y)
+            
+            g_loss = perc_loss + 01e-3 * adversarial_loss 
 
             g_loss.requires_grad_()
             g_loss.backward(retain_graph=True)

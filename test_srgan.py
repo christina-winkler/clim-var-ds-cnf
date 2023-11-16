@@ -110,6 +110,103 @@ def inv_scaler(x, min_value=0, max_value=100):
     return x
 
 def plot_std(model):
+    """
+    For this experiment we visualize the super-resolution space for a single
+    low-resolution image and its possible HR target predictions. We visualize
+    the standard deviation of these predictions from the mean of the model.
+    """
+    color = 'plasma'
+    savedir_viz = "experiments/{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset)
+    os.makedirs(savedir_viz, exist_ok=True)
+    model.eval()
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            y_unorm = item[2].to(args.device)
+            x_unnorm = item[3].to(args.device)
+
+            mu0 = model(x)
+
+            samples = []
+            n = 20
+            sq_diff = torch.zeros_like(mu0)
+            for n in range(n):
+                mu1 = model(x)
+                samples.append(mu0)
+                sq_diff += (mu1 - mu0)**2
+
+            # compute population standard deviation
+            sigma = torch.sqrt(sq_diff / n)
+
+            # create plot
+            plt.figure()
+            plt.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap=color)
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/sigma_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            plt.figure()
+            plt.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/mu0_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            fig, (ax1, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,6)
+            # fig.suptitle('Y, Y_hat, mu, sigma')
+            ax1.imshow(y[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax1)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax1.set_title('Ground Truth', fontsize=5)
+            ax1.axis('off')
+            # ax2.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax2)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax2.set_title('Mean', fontsize=5)
+            # ax2.axis('off')
+            ax3.imshow(samples[1][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax3)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax3.set_title('Sample 1', fontsize=5)
+            ax3.axis('off')
+            ax4.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax4)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax4.set_title('Sample 2', fontsize=5)
+            ax4.axis('off')
+            ax5.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax5)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax5.set_title('Sample 3', fontsize=5)
+            ax5.axis('off')
+            ax6.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax6)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax6.set_title('Sample 4', fontsize=5)
+            ax6.axis('off')
+            divider = make_axes_locatable(ax7)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            im7 = ax7.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap='magma')
+            cbar = fig.colorbar(im7,cmap='magma', cax=cax)
+            cbar.ax.tick_params(labelsize=5)
+            ax7.set_title('Std. Dev.', fontsize=5)
+            ax7.axis('off')
+            plt.tight_layout()
+            plt.savefig(savedir_viz + '/std_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.show()
+            plt.close()
+
     return None
 
 def test(model, test_loader, exp_name, modelname, args):
@@ -254,12 +351,12 @@ if __name__ == "__main__":
 
     # Load model
     # 2x watercontent
-    # modelname = 'generator_epoch_3_step_9500'
-    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'generator_epoch_3_step_9250'
+    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x watercontent
-    modelname = 'generator_epoch_6_step_4000'
-    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_09_06_49_00_4x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'generator_epoch_6_step_4000'
+    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_09_06_49_00_4x/model_checkpoints/{}.tar'.format(modelname)
 
     ckpt = torch.load(gen_modelpath)
     generator.load_state_dict(ckpt['model_state_dict'])
@@ -270,5 +367,6 @@ if __name__ == "__main__":
     generator = generator.to(args.device)
 
     exp_name = "srgan-{}-{}x".format(args.trainset, args.s)
-    test(generator, test_loader, exp_name, modelname, args)
+    plot_std(generator)
+    # test(generator, test_loader, exp_name, modelname, args)
 

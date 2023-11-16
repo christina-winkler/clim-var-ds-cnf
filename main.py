@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import stflow, srflow, cdiff, srgan, srgan2
+from models.architectures import stflow, srflow, cdiff, srgan, srgan2, srgan2_stochastic
 
 # Optimization
 from optimization import trainer_srflow0, trainer_srgan, trainer_srflow_scaddDS, trainer_srflow_addDS, trainer_srflow_multDS, trainer_srflow_softmax, trainer_srflow_perc_loss
@@ -112,10 +112,9 @@ def main(args):
                                    model=model,
                                    device=args.device)   
 
-    if args.modeltype == "srgan":
-        # generator = srgan.Generator(in_channels, args.s)
-        generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
-        # generator = srgan.ResNet(in_channels, noise=True, number_residual_blocks=8, upsampling_factor=args.s)
+    if args.modeltype == "srgan_stoch":
+
+        generator = srgan2_stochastic.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
         discriminator = srgan.Discriminator(in_channels)
         model = (generator, discriminator)
 
@@ -128,7 +127,8 @@ def main(args):
         trainer_srgan.trainer(args=args, train_loader=train_loader,
                               valid_loader=valid_loader,
                               model=model,
-                              device=args.device)
+                              device=args.device,
+                              constraint=args.constraint)
 
     if args.modeltype == "stflow":
 
