@@ -204,6 +204,8 @@ class SRFlow(nn.Module):
         # x_bpd = -(logdet + logp_z) / D
         x_nll = -(logdet + logp_z)
 
+        print(logp_z)
+
         return z, x_nll
 
     def inverse_flow(self, z, xlr, eps=1.0, logdet=0, use_stored=False):

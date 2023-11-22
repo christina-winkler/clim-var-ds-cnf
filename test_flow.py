@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 import random
-
+from models.architectures import srgan, srgan2, srgan2_stochastic
 import PIL
 import os
 import torchvision
@@ -102,7 +102,7 @@ parser.add_argument("--testset", type=str, default="era5-TCW",
 
 args = parser.parse_args()
 
-def inv_scaler(x, min_value=0, max_value=100):
+def inv_scaler(x, min_value=None, max_value=None):
     # min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
     # max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
     x = x * (max_value - min_value) + min_value
@@ -116,7 +116,7 @@ def plot_std(model, test_loader, exp_name, modelname, args):
     the standard deviation of these predictions from the mean of the model.
     """
     color = 'plasma'
-    savedir_viz = "experiments/{}_{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset, args.s)
+    savedir_viz = "experiments/{}_{}_{}_{}x/snapshots/population_std/".format(exp_name, modelname, args.trainset, args.s)
     os.makedirs(savedir_viz, exist_ok=True)
     model.eval()
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
@@ -208,6 +208,140 @@ def plot_std(model, test_loader, exp_name, modelname, args):
             plt.close()
 
     return None
+
+def compute_probs(model, generator, test_loader, exp_name, modelname, args):
+    """
+    For this experiment we compute the probability of the prediction
+    compared to the ground truth under the estimated density. 
+    """
+    color = 'plasma'
+    savedir_viz = "experiments/{}_{}_{}_{}x/snapshots/population_std/".format(exp_name, modelname, args.trainset, args.s)
+    os.makedirs(savedir_viz, exist_ok=True)
+    model.eval()
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+
+    log_probs_cnf = []
+    log_probs_gan = []
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            y_unorm = item[2].to(args.device)
+            x_unnorm = item[3].to(args.device)
+
+            # CNF results
+            mu05,_,_ = model(xlr=x, reverse=True, eps=1.0)
+
+            z_hat, yhat_nll = model(x_hr=mu05, xlr=x)
+            z, y_nll = model(x_hr=y, xlr=x)
+
+            # print('Logprob y CNF:', yhat_nll.mean())
+            # print('Logprob y_hat CNF', y_nll.mean())
+            # print('Diff NLLs', (y_nll-yhat_nll).mean())
+
+            # GAN results
+            y_hat_gen = generator(x) # treat y_hat as the mean
+            samples = []
+            n = 50
+            for n in range(n):
+                sample = generator(x)
+                samples.append(sample)
+
+            stack = torch.stack(samples, dim=0).squeeze(1)
+            std_gen = stack.std(dim=0)
+            mean_gen = stack.mean(dim=0)
+
+            # Compute probability. Use PyTorch library normal distribution for this. 
+            normal = torch.distributions.normal.Normal(loc=y_hat_gen, scale=std_gen)
+            log_p_y_gen = normal.log_prob(y)
+            prob_y_gen = log_p_y_gen.mean().exp()
+
+            log_p_yhat_gen = normal.log_prob(y_hat_gen)
+            prob_yhat_gen = log_p_yhat_gen.mean().exp()
+
+            # print('Logprob y GAN:', log_p_y_gen.mean())
+            # print('Logprob y_hat GAN', log_p_yhat_gen.mean())
+            # print('Diff Logprobs', (log_p_y_gen-log_p_yhat_gen).mean())
+
+            # pdb.set_trace()
+
+            log_probs_cnf.append(y_nll.mean().item())
+            log_probs_gan.append(log_p_y_gen.mean().item())
+
+            print('CNF NLL:', np.mean(log_probs_cnf))
+            print('GAN NLL:', np.mean(log_probs_gan))
+
+            # pdb.set_trace()
+
+            # # create plot
+            # plt.figure()
+            # plt.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap=color)
+            # plt.axis('off')
+            # # plt.show()
+            # plt.savefig(savedir_viz + '/sigma_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
+
+            # plt.figure()
+            # plt.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # plt.axis('off')
+            # # plt.show()
+            # plt.savefig(savedir_viz + '/mu0_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
+
+            # fig, (ax1, ax2, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,7)
+            # # fig.suptitle('Y, Y_hat, mu, sigma')
+            # ax1.imshow(y[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax1)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax1.set_title('Ground Truth', fontsize=5)
+            # ax1.axis('off')
+            # ax2.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax2)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax2.set_title('Mean', fontsize=5)
+            # ax2.axis('off')
+            # ax3.imshow(samples[1][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax3)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax3.set_title('Sample 1', fontsize=5)
+            # ax3.axis('off')
+            # ax4.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax4)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax4.set_title('Sample 2', fontsize=5)
+            # ax4.axis('off')
+            # ax5.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax5)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax5.set_title('Sample 3', fontsize=5)
+            # ax5.axis('off')
+            # ax6.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax6)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax6.set_title('Sample 4', fontsize=5)
+            # ax6.axis('off')
+            # divider = make_axes_locatable(ax7)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # im7 = ax7.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap='magma')
+            # cbar = fig.colorbar(im7,cmap='magma', cax=cax)
+            # cbar.ax.tick_params(labelsize=5)
+            # ax7.set_title('Std. Dev.', fontsize=5)
+            # ax7.axis('off')
+            # plt.tight_layout()
+            # plt.savefig(savedir_viz + '/std_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # # plt.show()
+            # plt.close()
+
+    return None
+
 
 def test(model, test_loader, exp_name, modelname, logstep, args):
 
@@ -725,9 +859,19 @@ if __name__ == "__main__":
     # modelname = 'model_epoch_9_step_12500'
     # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_softmax__2023_11_10_11_19_16_4x/model_checkpoints/{}.tar'.format(modelname)
 
+    # 2x watercontent
+    gen_modelname = 'generator_epoch_2_step_7250'
+    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_stoch_era5-TCW_None__2023_11_16_05_31_20_2x/model_checkpoints/{}.tar'.format(gen_modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+
+    # init model
+    generator = srgan2_stochastic.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+    ckpt = torch.load(gen_modelpath)
+    generator.load_state_dict(ckpt['model_state_dict'])
+    generator = generator.to(args.device)
+    generator.eval()
 
     print(torch.cuda.device_count())
     ckpt = torch.load(modelpath, map_location='cuda:0')
@@ -739,8 +883,9 @@ if __name__ == "__main__":
     model = model.to(args.device)
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
+    compute_probs(model, generator, test_loader, exp_name, modelname, args)
     # plot_std(model, test_loader, exp_name, modelname, args)
-    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
     # test(model, test_loader, exp_name, modelname, -99999, args)
