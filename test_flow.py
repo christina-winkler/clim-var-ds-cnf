@@ -116,7 +116,7 @@ def plot_std(model, test_loader, exp_name, modelname, args):
     the standard deviation of these predictions from the mean of the model.
     """
     color = 'plasma'
-    savedir_viz = "experiments/{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset)
+    savedir_viz = "experiments/{}_{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset, args.s)
     os.makedirs(savedir_viz, exist_ok=True)
     model.eval()
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
@@ -266,8 +266,8 @@ def test(model, test_loader, exp_name, modelname, logstep, args):
     rmse0_dens = []
 
     color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
-    savedir_viz = "experiments/{}_{}_{}_{}/snapshots/test/".format(exp_name, modelname, args.trainset, args.constraint)
-    savedir_txt = 'experiments/{}_{}_{}_{}/'.format(exp_name, modelname, args.trainset, args.constraint)
+    savedir_viz = "experiments/{}_{}_{}_{}_{}x/snapshots/test/".format(exp_name, modelname, args.trainset, args.constraint, args.s)
+    savedir_txt = 'experiments/{}_{}_{}/'.format(exp_name, modelname, args.trainset, args.constraint)
 
     os.makedirs(savedir_viz, exist_ok=True)
     os.makedirs(savedir_txt, exist_ok=True)
@@ -620,7 +620,7 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             # super resolve image
             mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
 
-            n_bins = 100
+            n_bins = int(y_unorm.max())
             fig, ((ax0,ax1)) = plt.subplots(nrows=1, ncols=2, figsize=(30, 10))
 
             colors = ['mediumorchid', 'coral']
@@ -636,7 +636,7 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             area1 = sum(np.diff(bins)*values[1])
             print(area1)
             ax0.set_xlabel('pixel values')
-            ax0.set_ylabel('normalized density')
+            ax0.set_ylabel('density')
             ax0.set_title('Normalized prediction vs. ground truth pixel distribution')
             ax0.legend(prop={'size': 10})
 
@@ -647,7 +647,7 @@ def calibration_exp(model, test_loader, exp_name, modelname, logstep, args):
             mu05_unorm_fl = mu05_unorm.flatten().detach().cpu().numpy()
             value, bins ,_= ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
             ax1.set_xlabel('pixel values')
-            ax1.set_ylabel('unormalized density')
+            ax1.set_ylabel('density')
             ax1.set_title('Unormalized prediction vs. ground truth pixel distribution')
             ax1.legend(prop={'size': 10})
 
@@ -707,15 +707,15 @@ if __name__ == "__main__":
     # modelpath =  '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_addDS__2023_11_13_15_57_11_4x/model_checkpoints/{}.tar'.format(modelname)
 
     # 2x watercontent None
-    # modelname = 'model_epoch_8_step_10500'
-    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'model_epoch_8_step_10500'
+    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # modelname = 'model_epoch_4_step_29000'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling watercontent None
-    modelname = 'model_epoch_18_step_23000'
-    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_10_11_27_23_4x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'model_epoch_18_step_23000'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_10_11_27_23_4x/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x upsampling water content + perc loss
     # modelname = 'model_epoch_6_step_8750'
@@ -740,7 +740,7 @@ if __name__ == "__main__":
 
     exp_name = "flow-{}-level-{}-k".format(args.L, args.K)
     # plot_std(model, test_loader, exp_name, modelname, args)
-    # calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
+    calibration_exp(model, test_loader, exp_name, modelname, -99999, args)
 
     print("Evaluate on test split ...")
-    test(model, test_loader, exp_name, modelname, -99999, args)
+    # test(model, test_loader, exp_name, modelname, -99999, args)
