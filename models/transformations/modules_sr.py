@@ -349,13 +349,14 @@ class GaussianPrior(nn.Module):
                 mean, sigma = self.final_prior(lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
                 logpz += prior.log_prob(x).sum(dim=[1,2,3])
+                print(logpz)
                 z = x
         else:
             if not self.final:
                 mean, sigma = self.split2d_prior(x, lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
                 z2 = prior.sample().type(torch.FloatTensor).cuda()
-                logpz -= prior.log_prob(z2).sum(dim=[1,2,3])
+                logpz += prior.log_prob(z2).sum(dim=[1,2,3])
                 z = torch.cat((x, z2), 1)
 
             else:
@@ -365,7 +366,7 @@ class GaussianPrior(nn.Module):
                 mean, sigma = self.final_prior(lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
                 z = prior.sample().type(torch.FloatTensor).cuda()
-                logpz -= prior.log_prob(z).sum(dim=[1,2,3])
+                logpz += prior.log_prob(z).sum(dim=[1,2,3])
                 # print("Test probs", torch.exp(logpz))
 
         return z, logdet, logpz

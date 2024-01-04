@@ -26,7 +26,7 @@ import timeit
 import pdb
 import seaborn as sns
 
-from models.architectures import srgan, srgan2
+from models.architectures import srgan, srgan2, srgan2_stochastic
 from utils import metrics, wasserstein
 from geomloss import SamplesLoss
 from operator import add
@@ -110,6 +110,103 @@ def inv_scaler(x, min_value=0, max_value=100):
     return x
 
 def plot_std(model):
+    """
+    For this experiment we visualize the super-resolution space for a single
+    low-resolution image and its possible HR target predictions. We visualize
+    the standard deviation of these predictions from the mean of the model.
+    """
+    color = 'plasma'
+    savedir_viz = "experiments/{}_{}_{}/snapshots/population_std/".format(exp_name, modelname, args.trainset)
+    os.makedirs(savedir_viz, exist_ok=True)
+    model.eval()
+    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            y_unorm = item[2].to(args.device)
+            x_unnorm = item[3].to(args.device)
+
+            mu0 = model(x)
+
+            samples = []
+            n = 20
+            sq_diff = torch.zeros_like(mu0)
+            for n in range(n):
+                mu1 = model(x)
+                samples.append(mu0)
+                sq_diff += (mu1 - mu0)**2
+
+            # compute population standard deviation
+            sigma = torch.sqrt(sq_diff / n)
+
+            # create plot
+            plt.figure()
+            plt.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap=color)
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/sigma_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            plt.figure()
+            plt.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            plt.axis('off')
+            # plt.show()
+            plt.savefig(savedir_viz + '/mu0_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
+            fig, (ax1, ax3, ax4, ax5, ax6, ax7) = plt.subplots(1,6)
+            # fig.suptitle('Y, Y_hat, mu, sigma')
+            ax1.imshow(y[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax1)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax1.set_title('Ground Truth', fontsize=5)
+            ax1.axis('off')
+            # ax2.imshow(mu0[0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            # divider = make_axes_locatable(ax2)
+            # cax = divider.append_axes("right", size="5%", pad=0.05)
+            # cax.set_axis_off()
+            # ax2.set_title('Mean', fontsize=5)
+            # ax2.axis('off')
+            ax3.imshow(samples[1][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax3)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax3.set_title('Sample 1', fontsize=5)
+            ax3.axis('off')
+            ax4.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax4)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax4.set_title('Sample 2', fontsize=5)
+            ax4.axis('off')
+            ax5.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax5)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax5.set_title('Sample 3', fontsize=5)
+            ax5.axis('off')
+            ax6.imshow(samples[2][0,...].permute(1,2,0).cpu().numpy(), cmap=cmap)
+            divider = make_axes_locatable(ax6)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            cax.set_axis_off()
+            ax6.set_title('Sample 4', fontsize=5)
+            ax6.axis('off')
+            divider = make_axes_locatable(ax7)
+            cax = divider.append_axes("right", size="5%", pad=0.05)
+            im7 = ax7.imshow(sigma[0,...].permute(1,2,0).cpu().numpy(), cmap='magma')
+            cbar = fig.colorbar(im7,cmap='magma', cax=cax)
+            cbar.ax.tick_params(labelsize=5)
+            ax7.set_title('Std. Dev.', fontsize=5)
+            ax7.axis('off')
+            plt.tight_layout()
+            plt.savefig(savedir_viz + '/std_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.show()
+            plt.close()
+
     return None
 
 def test(model, test_loader, exp_name, modelname, args):
@@ -241,6 +338,78 @@ def test(model, test_loader, exp_name, modelname, args):
         
         return None
 
+def calibration_exp(model, test_loader, exp_name, modelname, args):
+    """
+    For this experiment we visualize the pixel distribution of the normalized
+    and unnormalized counterpart images of the ground truth and the predicted
+    super-resolved image to assess model calibration.
+    """
+
+    savedir_viz = "experiments/{}_{}_{}_x/snapshots/calibration_histograms/".format(exp_name, modelname, args.trainset, args.s)
+    os.makedirs(savedir_viz, exist_ok=True)
+
+    print("Generating Histograms ... ")
+
+    model.eval()
+    with torch.no_grad():
+        for batch_idx, item in enumerate(test_loader):
+
+            y = item[0].to(args.device)
+            x = item[1].to(args.device)
+
+            y_unorm = item[2].squeeze(1).to(args.device)
+            x_unorm = item[3].squeeze(1).to(args.device)
+
+            # super resolve image
+            y_hat = model(x)
+
+            mu05_unorm = inv_scaler(y_hat, y_unorm.min(), y_unorm.max())
+            n_bins = int(y_unorm.max())
+            fig, ((ax0,ax1)) = plt.subplots(nrows=1, ncols=2, figsize=(30, 10))
+
+            colors = ['mediumorchid', 'coral']
+
+            labelax0 = [r'Ground Truth',r'Prediction']
+            y_fl = y.flatten().detach().cpu().numpy()
+            mu05_fl = y_hat.flatten().detach().cpu().numpy()
+            values, bins, _ = ax0.hist(np.stack((y_fl, mu05_fl),axis=1), n_bins,
+                                      density=True, histtype='step',color=colors,
+                                      label=labelax0)
+            area0 = sum(np.diff(bins)*values[0])
+            print(area0)
+            area1 = sum(np.diff(bins)*values[1])
+            print(area1)
+            ax0.set_xlabel('pixel values')
+            ax0.set_ylabel('density')
+            ax0.set_title('Normalized prediction vs. ground truth pixel distribution')
+            ax0.legend(prop={'size': 10})
+
+            labelax1 = ['Ground Truth', r'Prediction']
+            # y_unorm = inv_scaler(y, y_unorm.min(), y_unorm.max())
+            y_unorm_fl = y_unorm.flatten().detach().cpu().numpy()
+            mu05_unorm_fl = mu05_unorm.flatten().detach().cpu().numpy()
+            value, bins ,_= ax1.hist(np.stack((y_unorm_fl, mu05_unorm_fl),axis=1), n_bins, density=True, histtype='step',color=colors, label=labelax1)
+            ax1.set_xlabel('pixel values')
+            ax1.set_ylabel('density')
+            ax1.set_title('Unormalized prediction vs. ground truth pixel distribution')
+            ax1.legend(prop={'size': 10})
+
+            # plt.show()
+
+            # labelax2 = ['abs diff normalized']
+            # newcolor = ['deepskyblue', 'palegreen']
+            # diff = torch.abs(y-mu05).flatten().detach().cpu().numpy()
+            # diff_unorm = torch.abs(y_unorm-mu05_unorm).flatten().detach().cpu().numpy()
+            # ax2.hist(np.stack((diff, diff_unorm),axis=1), n_bins, density=True, histtype='barstacked',color=newcolor, label=labelax2)
+            # ax2.set_xlabel('nr of bins')
+            # ax2.set_ylabel('pixel values')
+            # ax2.set_title('Absolute difference distributions')
+            # ax2.legend(prop={'size': 10})
+            # plt.show()
+
+            fig.savefig(savedir_viz + '/histogram_multiplot_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            plt.close()
+
 if __name__ == "__main__":
 
     # Load testset
@@ -249,17 +418,17 @@ if __name__ == "__main__":
     args.height, args.width = next(iter(test_loader))[0].shape[2], next(iter(test_loader))[0].shape[3]
 
     # init model
-    generator = srgan2.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+    generator = srgan2_stochastic.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
     # disc_net = srgan.Discriminator(in_channels)
 
     # Load model
     # 2x watercontent
-    # modelname = 'generator_epoch_3_step_9500'
-    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_08_11_16_25_2x/model_checkpoints/{}.tar'.format(modelname)
+    modelname = 'generator_epoch_2_step_7250'
+    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_stoch_era5-TCW_None__2023_11_16_05_31_20_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # 4x watercontent
-    modelname = 'generator_epoch_6_step_4000'
-    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_era5-TCW_2023_11_09_06_49_00_4x/model_checkpoints/{}.tar'.format(modelname)
+    # modelname = 'generator_epoch_5_step_12750'
+    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_stoch_era5-TCW_None__2023_11_16_05_32_22_4x/model_checkpoints/{}.tar'.format(modelname)
 
     ckpt = torch.load(gen_modelpath)
     generator.load_state_dict(ckpt['model_state_dict'])
@@ -270,5 +439,7 @@ if __name__ == "__main__":
     generator = generator.to(args.device)
 
     exp_name = "srgan-{}-{}x".format(args.trainset, args.s)
-    test(generator, test_loader, exp_name, modelname, args)
+    # plot_std(generator)
+    calibration_exp(generator, test_loader, exp_name, modelname, args)
+    # test(generator, test_loader, exp_name, modelname, args)
 
