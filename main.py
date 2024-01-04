@@ -14,10 +14,10 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import stflow, srflow, cdiff, srgan, srgan2, srgan2_stochastic
+from models.architectures import srflow
 
 # Optimization
-from optimization import trainer_srflow0, trainer_srgan, trainer_srflow_scaddDS, trainer_srflow_addDS, trainer_srflow_multDS, trainer_srflow_softmax, trainer_srflow_perc_loss
+from optimization import trainer_aenf
 
 # import evaluate
 import test
@@ -31,6 +31,7 @@ sys.path.append("../../")
 
 
 def main(args):
+
     print(torch.cuda.device_count())
     random.seed(0)
     torch.manual_seed(0)
@@ -68,55 +69,15 @@ def main(args):
 
     if args.modeltype == "srflow":
 
-        model = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
-                               args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
-        if args.resume:
-            modelname = 'model_epoch_1_step_53000.tar'
-            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
-            ckpt = torch.load(modelpath)
-            model.load_state_dict(ckpt['model_state_dict'])
+        encoder = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
+                                 args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
 
-        if args.constraint == 'None':
-            trainer_srflow0.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
+        encoder_proj = nn.Sequential(nn.Linear(height*width,18), nn.ReLU))
 
-        elif args.constraint == 'addDS':
-            trainer_srflow_addDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
+        decoder_proj = nn.Sequential(nn.Linear(18,height*width), nn.ReLU))
 
-        elif args.constraint == 'scaddDS':
-            trainer_srflow_scaddDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'multDS':
-            trainer_srflow_multDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'perc':
-            trainer_srflow_perc_loss.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'softmax':
-            trainer_srflow_softmax.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-    if args.modeltype == "srgan_stoch":
-
-        generator = srgan2_stochastic.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
-        discriminator = srgan.Discriminator(in_channels)
-        model = (generator, discriminator)
+        decoder = srflow.SRFlow((in_channels, height//args.s, width//args.s), args.filter_size, args.L, args.K,
+                                 args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
 
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
@@ -124,30 +85,14 @@ def main(args):
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
-        trainer_srgan.trainer(args=args, train_loader=train_loader,
-                              valid_loader=valid_loader,
-                              model=model,
-                              device=args.device,
-                              constraint=args.constraint)
-
-    if args.modeltype == "stflow":
-
-        model = stflow.FlowModel((in_channels, args.height, args.width),
-                                  args.filter_size, args.L, args.K, args.bsz,
-                                  args.lag_len, args.s, args.nb, args.device,
-                                  args.condch, args.nbits,
-                                  args.noscale, args.noscaletest).to(args.device)
-
-        if args.resume:
-            modelname = 'model_epoch_4_step_96500.tar'
-            modelpath = os.getcwd() + "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_09_22_17_08_51/model_checkpoints/{}".format(modelname)
-            ckpt = torch.load(modelpath)
-            model.load_state_dict(ckpt['model_state_dict'])
-
-        trainer_stflow.trainer(args=args, train_loader=train_loader,
+        trainer_srflow.trainer(args=args, train_loader=train_loader,
                                valid_loader=valid_loader,
-                               model=model,
+                               encoder=encoder,
+                               decoder=decoder,
+                               encoder_proj=encoder_proj,
+                               decoder_proj=decoder_proj,
                                device=args.device)
+
     else:
          print("Modeltype not available! Check spelling.")
 
@@ -171,8 +116,6 @@ if __name__ == "__main__":
                         help="Interval in which results should be logged.")
     parser.add_argument("--val_interval", type=int, default=250,
                         help="Interval in which model should be validated.")
-    parser.add_argument("--constraint", type=str, default='scaddDS',
-                        help="Physical Constraint to be applied during training.")
 
     # runtime configs
     parser.add_argument("--visual", action="store_true",
