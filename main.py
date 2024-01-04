@@ -104,13 +104,13 @@ def main(args):
             trainer_srflow_perc_loss.trainer(args=args, train_loader=train_loader,
                                    valid_loader=valid_loader,
                                    model=model,
-                                   device=args.device)   
+                                   device=args.device)
 
         elif args.constraint == 'softmax':
             trainer_srflow_softmax.trainer(args=args, train_loader=train_loader,
                                    valid_loader=valid_loader,
                                    model=model,
-                                   device=args.device)   
+                                   device=args.device)
 
     if args.modeltype == "srgan":
         # generator = srgan.Generator(in_channels, args.s)
@@ -218,7 +218,7 @@ if __name__ == "__main__":
                         help="Maximum value of the linear schedule (for diffusion model).")
 
     # data
-    parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
+    parser.add_argument("--datadir", type=str, default="/home/christina/Documents/clim-var-ds-cnf/data",
                         help="Dataset to train the model on.")
     parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")

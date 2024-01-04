@@ -49,7 +49,7 @@ def load_era5_T2M(args):
 
     print("Loading ERA5 T2M ...")
 
-    dpath = '/home/mila/c/christina.winkler/scratch/data/assets/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr'
+    dpath = '/home/christina/Documents/clim-var-ds-cnf/data/assets/ftp.bgc-jena.mpg.de/pub/outgoing/aschall/data.zarr'
 
     dataset = ERA5T2MData(data_path=dpath, s=args.s)
 
