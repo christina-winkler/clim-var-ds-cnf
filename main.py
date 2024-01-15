@@ -127,7 +127,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
 
     # train configs
-    parser.add_argument("--modeltype", type=str, default="srgan",
+    parser.add_argument("--modeltype", type=str, default="srflow",
                         help="Specify modeltype you would like to train [srflow, cdiff, stflow].")
     parser.add_argument("--model_path", type=str, default="runs/",
                         help="Directory where models are saved.")
