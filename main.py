@@ -17,7 +17,7 @@ import os
 from models.architectures import stflow, srflow, cdiff, srgan, srgan2, srgan2_stochastic
 
 # Optimization
-from optimization import trainer_srflow0, trainer_srgan
+from optimization import trainer_srflow, trainer_srgan
 
 # import evaluate
 import test
@@ -72,14 +72,14 @@ def main(args):
                                args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
-            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
-        trainer_srflow0.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
+        trainer_srflow.trainer(args=args, train_loader=train_loader,
+                               valid_loader=valid_loader,
+                               model=model,
+                               device=args.device)
 
 
     if args.modeltype == "srgan_stoch":
@@ -90,15 +90,14 @@ def main(args):
 
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
-            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_01constraint2x/model_checkpoints/{}".format(modelname)
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_srgan.trainer(args=args, train_loader=train_loader,
                               valid_loader=valid_loader,
                               model=model,
-                              device=args.device,
-                              constraint=args.constraint)
+                              device=args.device)
 
     if args.modeltype == "stflow":
 
@@ -141,8 +140,6 @@ if __name__ == "__main__":
                         help="Interval in which results should be logged.")
     parser.add_argument("--val_interval", type=int, default=250,
                         help="Interval in which model should be validated.")
-    parser.add_argument("--constraint", type=str, default='scaddDS',
-                        help="Physical Constraint to be applied during training.")
 
     # runtime configs
     parser.add_argument("--visual", action="store_true",
