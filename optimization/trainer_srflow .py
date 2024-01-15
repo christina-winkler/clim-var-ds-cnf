@@ -98,6 +98,8 @@ def trainer(args, train_loader, valid_loader, model,
             # y_unorm = item[2].to(device)
             # x_unorm = item[3].to(device)
 
+            import pdb; pdb.set_trace()
+
             model.train()
             optimizer.zero_grad()
 
@@ -116,7 +118,7 @@ def trainer(args, train_loader, valid_loader, model,
             # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll 
+            loss = nll
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
