@@ -1,7 +1,6 @@
 data/assets/
 data/era5_tcw/*
 data/geopotential_500_orig/*
-data/era5_*
 data/__pycache__
 experiments/__pycache__
 experiments/runs/
