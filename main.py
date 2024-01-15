@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import stflow, srflow, cdiff, srgan, srgan2, srgan2_stochastic
+from models.architectures import srflow, srgan, srgan2, srgan2_stochastic
 
 # Optimization
 from optimization import trainer_srflow, trainer_srgan
@@ -98,14 +98,6 @@ def main(args):
                               valid_loader=valid_loader,
                               model=model,
                               device=args.device)
-
-    if args.modeltype == "stflow":
-
-        model = stflow.FlowModel((in_channels, args.height, args.width),
-                                  args.filter_size, args.L, args.K, args.bsz,
-                                  args.lag_len, args.s, args.nb, args.device,
-                                  args.condch, args.nbits,
-                                  args.noscale, args.noscaletest).to(args.device)
 
         if args.resume:
             modelname = 'model_epoch_4_step_96500.tar'

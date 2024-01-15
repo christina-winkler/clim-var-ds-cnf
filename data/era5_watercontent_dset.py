@@ -7,6 +7,7 @@ from skimage.transform import resize
 import torch
 import numpy as np
 import matplotlib.pyplot as plt
+import pdb
 
 @dataclass
 class MinMaxScaler:
@@ -55,10 +56,10 @@ class ERA5WTCData(Dataset):
 
     def __getitem__(self, idx):
         x,y = self.inputs[idx], self.targets[idx]
-
-        if self.s==2: # by default dataset is stored as 4x downsampling
-            x = np.zeros((1,1,y.shape[2]//2,y.shape[2]//2))
-            x[0,0,...] = resize(y[0,0,...], (y.shape[2]//2, y.shape[3]//2), anti_aliasing=True)
+        
+        if self.s != None: # by default dataset is stored as 4x downsampling
+            x = np.zeros((1,1,y.shape[2]//self.s, y.shape[2]//self.s))
+            x[0,0,...] = resize(y[0,0,...], (y.shape[2]//self.s, y.shape[3]//self.s), anti_aliasing=True)
             transf = transforms.ToTensor()
             x = transf(x[0,...]).permute(1,2,0).unsqueeze(0).type(torch.FloatTensor)
 

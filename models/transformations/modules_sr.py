@@ -349,7 +349,6 @@ class GaussianPrior(nn.Module):
                 mean, sigma = self.final_prior(lr_feat_map)
                 prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
                 logpz += prior.log_prob(x).sum(dim=[1,2,3])
-                print(logpz)
                 z = x
         else:
             if not self.final:

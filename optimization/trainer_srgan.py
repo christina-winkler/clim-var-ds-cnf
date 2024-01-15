@@ -23,7 +23,7 @@ from torch.optim.lr_scheduler import StepLR
 from optimization.validation_srgan import validate
 from typing import Tuple, Callable
 import timeit
-from models.phys_constraints import *
+
 import wandb
 os.environ["WANDB_SILENT"] = "true"
 import sys

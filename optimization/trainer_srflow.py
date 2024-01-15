@@ -15,9 +15,9 @@ import pdb
 import torchvision
 from tensorboardX import SummaryWriter
 from torch.optim.lr_scheduler import StepLR
-from optimization.validation_cdiff import validate
+from models.architectures.conv_lstm import *
+from optimization.validation_srflow import validate
 from typing import Tuple, Callable
-import timeit
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
@@ -47,11 +47,11 @@ def trainer(args, train_loader, valid_loader, model,
             device='cpu', needs_init=True):
 
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
-    config_dict = vars(args)
 
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
-                                        args.modeltype + '_' + args.trainset  + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
+                                        args.modeltype + '_' + args.trainset + '_' + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
+
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
     with open(args.experiment_dir + '/configs.txt', 'w') as f:
@@ -63,18 +63,20 @@ def trainer(args, train_loader, valid_loader, model,
     os.makedirs(viz_dir, exist_ok=True)
 
     writer = SummaryWriter("{}".format(args.experiment_dir))
-    prev_loss_epoch = np.inf
+    prev_nll_epoch = np.inf
     logging_step = 0
     step = 0
+    bpd_valid = 0
     optimizer = optim.Adam(model.parameters(), lr=args.lr, amsgrad=True)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer,
                                                 step_size=2 * 10 ** 5,
                                                 gamma=0.5)
-
-    metric_dict = {'MSE': [], 'RMSE': [], 'MAE': []}
+    state=None
 
     model.to(device)
-
+    scaler = MinMaxScaler()
+    l1 = nn.L1Loss()
+    metric_dict = {'MSE': [], 'RMSE': [], 'MAE': []}
     params = sum(x.numel() for x in model.parameters() if x.requires_grad)
     print('Nr of Trainable Params on {}:  '.format(device), params)
 
@@ -93,13 +95,28 @@ def trainer(args, train_loader, valid_loader, model,
 
             y = item[0].to(device)
             x = item[1].to(device)
-            y_unorm = item[2].to(device)
-            x_unorm = item[3].to(device)
+            # y_unorm = item[2].to(device)
+            # x_unorm = item[3].to(device)
 
             model.train()
             optimizer.zero_grad()
+            
+            # # We need to init the underlying module in the dataparallel object
+            # For ActNorm layers.
+            if needs_init and torch.cuda.device_count() > 1:
+                bsz_p_gpu = args.bsz // torch.cuda.device_count()
+                _, _ = model.module.forward(x_hr=y[:bsz_p_gpu],
+                                            xlr=x[:bsz_p_gpu],
+                                            logdet=0)
 
-            loss = model(y,x)
+            # forward loss
+            z, nll = model.forward(x_hr=y, xlr=x)
+
+            writer.add_scalar("nll_train", nll.mean().item(), step)
+            # wandb.log({"nll_train": nll.mean().item()}, step)
+
+            # Compute gradients
+            loss = nll
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
@@ -107,21 +124,26 @@ def trainer(args, train_loader, valid_loader, model,
             scheduler.step()
             step = step + 1
 
-            print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, MSE Loss {:.3f}".format(
+            print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, NLL {:.3f}".format(
                     datetime.now().strftime("%Y-%m-%d %H:%M"),
                     epoch, step,
                     args.max_steps,
                     args.bsz,
-                    loss.mean()))
+                    nll.mean().item()))
 
             if step % args.log_interval == 0:
 
                 with torch.no_grad():
 
+                    # if hasattr(model, "module"):
+                    #     model_without_dataparallel = model.module
+                    # else:
+                    #     model_without_dataparallel = model
+
                     model.eval()
 
                     # Visualize low resolution GT
-                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
+                    grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
@@ -131,33 +153,29 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.close()
 
                     # Visualize High-Res GT
-                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
+                    grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), normalize=True, nrow=3)
                     plt.figure()
-                    plt.imshow(grid_high_res_gt.permute(
-                    1, 2, 0)[:,:,0], cmap=cmap)
+                    plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("High-Res GT")
                     # plt.show()
                     plt.savefig(viz_dir + '/high_res_gt_{}.png'.format(step), dpi=300, bbox_inches='tight')
                     plt.close()
 
-                    # Super-Resolving low-res
-                    start = timeit.default_timer()
-                    y_hat = model.super_resolution(x)
-                    stop = timeit.default_timer()
-                    print("Time Fwd pass:", stop-start)
-                    print(y_hat.max(), y_hat.min(), y.max(), y.min())
-                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), nrow=3)
+                     # Super-Resolving low-res
+                    y_hat, logdet, logpz = model(xlr=x, reverse=True, eps=0.8)
+                    # print(y_hat.max(), y_hat.min(), y.max(), y.min())
+                    grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=False, nrow=3)
                     plt.figure()
                     plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
                     plt.title("Y hat")
-                    plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300,bbox_inches='tight')
+                    plt.savefig(viz_dir + '/y_hat_mu08_{}.png'.format(step), dpi=300,bbox_inches='tight')
                     # plt.show()
                     plt.close()
 
                     abs_err = torch.abs(y_hat - y)
-                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), nrow=3)
+                    grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
                     plt.figure()
                     plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap=cmap)
                     plt.axis('off')
@@ -166,31 +184,29 @@ def trainer(args, train_loader, valid_loader, model,
                     # plt.show()
                     plt.close()
 
+
             if step % args.val_interval == 0:
                 print('Validating model ... ')
-                model.set_new_noise_schedule(schedule=args.noise_sched, n_timestep=args.gauss_steps,
-                                             linear_start=args.linear_start, linear_end=args.linear_end, device=args.device)
+                metric_dict, nll_valid = validate(model,
+                                     valid_loader,
+                                     metric_dict,
+                                     args.experiment_dir,
+                                     "{}".format(step),
+                                     args)
 
-                loss_valid, metric_dict = validate(model,
-                                      valid_loader,
-                                      metric_dict,
-                                      args.experiment_dir,
-                                      "{}".format(step),
-                                      args)
-
-                writer.add_scalar("loss_valid",
-                                  loss_valid.mean().item(),
+                writer.add_scalar("nll_valid",
+                                  nll_valid.mean().item(),
                                   logging_step)
 
                 # save checkpoint only when nll lower than previous model
-                if loss_valid < prev_loss_epoch:
+                if nll_valid < prev_nll_epoch:
                     PATH = args.experiment_dir + '/model_checkpoints/'
                     os.makedirs(PATH, exist_ok=True)
                     torch.save({'epoch': epoch,
                                 'model_state_dict': model.state_dict(),
                                 'optimizer_state_dict': optimizer.state_dict(),
-                                'loss': loss_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
-                    prev_loss_epoch = loss_valid
+                                'loss': nll_valid.mean()}, PATH+ f"model_epoch_{epoch}_step_{step}.tar")
+                    prev_nll_epoch = nll_valid
 
             logging_step += 1
 

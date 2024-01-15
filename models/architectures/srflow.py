@@ -204,8 +204,6 @@ class SRFlow(nn.Module):
         # x_bpd = -(logdet + logp_z) / D
         x_nll = -(logdet + logp_z)
 
-        print(logp_z)
-
         return z, x_nll
 
     def inverse_flow(self, z, xlr, eps=1.0, logdet=0, use_stored=False):
@@ -232,7 +230,7 @@ class SRFlow(nn.Module):
         Super-resolves a low-resolution image with estimated params.
         """
         # Draw samples from model
-        print('eps', eps)
+
         with torch.no_grad():
             samples = self.inverse_flow(z=None, xlr=x, eps=eps)[0]
             return samples #samples.clamp(min=0, max=float(self.nbins - 1) / float(self.nbins))
