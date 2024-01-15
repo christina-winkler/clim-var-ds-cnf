@@ -17,7 +17,7 @@ import os
 from models.architectures import stflow, srflow, cdiff, srgan, srgan2, srgan2_stochastic
 
 # Optimization
-from optimization import trainer_srflow0, trainer_srgan 
+from optimization import trainer_srflow0, trainer_srgan
 
 # import evaluate
 import test
@@ -76,41 +76,11 @@ def main(args):
             ckpt = torch.load(modelpath)
             model.load_state_dict(ckpt['model_state_dict'])
 
-        if args.constraint == 'None':
-            trainer_srflow0.trainer(args=args, train_loader=train_loader,
+        trainer_srflow0.trainer(args=args, train_loader=train_loader,
                                    valid_loader=valid_loader,
                                    model=model,
                                    device=args.device)
 
-        elif args.constraint == 'addDS':
-            trainer_srflow_addDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'scaddDS':
-            trainer_srflow_scaddDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'multDS':
-            trainer_srflow_multDS.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'perc':
-            trainer_srflow_perc_loss.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
-
-        elif args.constraint == 'softmax':
-            trainer_srflow_softmax.trainer(args=args, train_loader=train_loader,
-                                   valid_loader=valid_loader,
-                                   model=model,
-                                   device=args.device)
 
     if args.modeltype == "srgan_stoch":
 
