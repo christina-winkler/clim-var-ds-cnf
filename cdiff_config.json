@@ -38,10 +38,10 @@
         "unet": {
             "in_channel": 2,
             "out_channel": 1,
-            "inner_channel": 64,
+            "inner_channel": 16,
             "channel_multiplier": [1, 2, 4, 8, 8],
-            "attn_res": [16],
-            "res_blocks": 2,
+            "attn_res": [2],
+            "res_blocks": 1,
             "dropout": 0
         },
         "beta_schedule": {

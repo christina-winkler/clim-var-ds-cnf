@@ -85,7 +85,8 @@ def define_G(opt):
     if model_opt['which_model_G'] == 'cddpm':
         from .cddpm_modules import diffusion, unet
     if ('norm_groups' not in model_opt['unet']) or model_opt['unet']['norm_groups'] is None:
-        model_opt['unet']['norm_groups']=32
+        model_opt['unet']['norm_groups']=2
+
     model = unet.UNet(
         in_channel=model_opt['unet']['in_channel'],
         out_channel=model_opt['unet']['out_channel'],
@@ -97,6 +98,7 @@ def define_G(opt):
         dropout=model_opt['unet']['dropout'],
         image_size=model_opt['diffusion']['image_size']
     )
+
     netG = diffusion.GaussianDiffusion(
         model,
         image_size=model_opt['diffusion']['image_size'],
@@ -105,10 +107,12 @@ def define_G(opt):
         conditional=model_opt['diffusion']['conditional'],
         schedule_opt=model_opt['beta_schedule']['train']
     )
+
     if opt['phase'] == 'train':
-        # init_weights(netG, init_type='kaiming', scale=0.1)
-        init_weights(netG, init_type='orthogonal')
-    if opt['gpu_ids'] and opt['distributed']:
-        assert torch.cuda.is_available()
-        netG = nn.DataParallel(netG)
+        init_weights(netG, init_type='kaiming', scale=0.1)
+        #init_weights(netG, init_type='orthogonal')
+
+    # if opt['gpu_ids'] and opt['distributed']:
+    #     assert torch.cuda.is_available()
+    #     netG = nn.DataParallel(netG)
     return netG
