@@ -14,7 +14,7 @@ import numpy as np
 import os
 
 # Models
-from models.architectures import srflow, srgan, srgan2, srgan2_stochastic
+from models.architectures import srflow, srgan
 
 # Optimization
 from optimization import trainer_srflow, trainer_srgan

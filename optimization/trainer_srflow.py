@@ -1,36 +1,36 @@
+# Import libraries
 from datetime import datetime
-import torch
-import matplotlib.pyplot as plt
-from matplotlib import cm
-import torch.optim as optim
 import os
 import json
+import random
+import numpy as np
+import pdb
+
+import torch
+import torch.nn as nn
+import torch.optim as optim
+import torch.backends.cudnn as cudnn
+from torch.optim.lr_scheduler import StepLR
+
+import matplotlib.pyplot as plt
+from matplotlib import cm
+
 from skimage.transform import resize
 
-# Utils
-from utils import utils
-import numpy as np
-import random
-import pdb
 import torchvision
 from tensorboardX import SummaryWriter
-from torch.optim.lr_scheduler import StepLR
-from models.architectures.conv_lstm import *
-from optimization.validation_srflow import validate
-from typing import Tuple, Callable
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
+
+# Add project directory to sys.path for relative imports
 import sys
 sys.path.append("../../")
 
-# seeding only for debugging
-random.seed(0)
-torch.manual_seed(0)
-np.random.seed(0)
-
-torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = False
+# Custom Utils
+from utils import utils
+from optimization.validation_srflow import validate
+from typing import Tuple, Callable
 
 class MinMaxScaler:
     def __call__(self, x, max_value, min_value):
@@ -100,7 +100,7 @@ def trainer(args, train_loader, valid_loader, model,
 
             model.train()
             optimizer.zero_grad()
-            
+
             # # We need to init the underlying module in the dataparallel object
             # For ActNorm layers.
             if needs_init and torch.cuda.device_count() > 1:
