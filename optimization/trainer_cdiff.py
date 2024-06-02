@@ -109,9 +109,15 @@ def trainer(args, train_loader, valid_loader, model, opt, device='cpu'):
             # interpolate x to get SR
             sr = F.interpolate(x, scale_factor=args.s, mode='bilinear')
 
-            data = {'HR':y,'SR':sr, 'LR':x}
+            data = {'HR':y, 'SR':sr, 'LR':x}
             model.feed_data(data)
             model.optimize_parameters()
+
+            if step % 20==0:
+                plt.figure(figsize=(6, 4))
+                plt.imshow(data['SR'][0,...].permute(1, 2, 0).cpu().numpy())
+                plt.title('Shape of SR Tensor')
+                plt.show()
 
             if current_step % opt['train']['print_freq'] == 0:
                 logs = model.get_current_log()
@@ -123,12 +129,14 @@ def trainer(args, train_loader, valid_loader, model, opt, device='cpu'):
 
             step = step + 1
 
-            print("[{}] Epoch: {}, Train Step: {:01d}/{}, Bsz = {}, NLL {:.3f}".format(
-                    datetime.now().strftime("%Y-%m-%d %H:%M"),
-                    epoch, step,
-                    args.max_steps,
-                    args.bsz,
-                    nll.mean().item()))
+            model.test(continous=False)
+            visuals = model.get_current_visuals()
+            if step % 20==0:
+                plt.figure(figsize=(6, 4))
+                plt.imshow(visuals['SR'].permute(1, 2, 0).cpu().numpy())
+                plt.title('Super-Resolved Image')
+                plt.axis('off')
+                plt.show()
 
             if step % args.log_interval == 0:
 
