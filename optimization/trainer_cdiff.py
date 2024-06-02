@@ -113,13 +113,13 @@ def trainer(args, train_loader, valid_loader, model, opt, device='cpu'):
             model.feed_data(data)
             model.optimize_parameters()
 
-            if step % 20==0:
-                plt.figure(figsize=(6, 4))
-                plt.imshow(data['SR'][0,...].permute(1, 2, 0).cpu().numpy())
-                plt.title('Shape of SR Tensor')
-                plt.show()
+            # if step % 20==0:
+            #     plt.figure(figsize=(6, 4))
+            #     plt.imshow(data['SR'][0,...].permute(1, 2, 0).cpu().numpy())
+            #     plt.title('Shape of SR Tensor')
+            #     plt.show()
 
-            if current_step % opt['train']['print_freq'] == 0:
+            if current_step % 20 == 0:
                 logs = model.get_current_log()
                 message = '<epoch:{:3d}, iter:{:8,d}> '.format(
                     current_epoch, current_step)
@@ -131,12 +131,13 @@ def trainer(args, train_loader, valid_loader, model, opt, device='cpu'):
 
             model.test(continous=False)
             visuals = model.get_current_visuals()
-            if step % 20==0:
+            if step % 4==0:
                 plt.figure(figsize=(6, 4))
                 plt.imshow(visuals['SR'].permute(1, 2, 0).cpu().numpy())
                 plt.title('Super-Resolved Image')
+                plt.savefig(viz_dir + '/y_hat{}.png'.format(step), dpi=300,bbox_inches='tight')
                 plt.axis('off')
-                plt.show()
+                # plt.show()
 
             if step % args.log_interval == 0:
 

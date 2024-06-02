@@ -40,14 +40,14 @@
             "out_channel": 1,
             "inner_channel": 16,
             "channel_multiplier": [1, 2, 4, 8, 8],
-            "attn_res": [2],
+            "attn_res": [8],
             "res_blocks": 1,
             "dropout": 0
         },
         "beta_schedule": {
             "train": {
                 "schedule": "linear",
-                "n_timestep": 10,
+                "n_timestep": 1000,
                 "linear_start": 1e-6,
                 "linear_end": 1e-2
             },
