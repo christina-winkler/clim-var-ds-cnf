@@ -61,7 +61,7 @@ def inv_scaler(x):
 
 
 def trainer(args, train_loader, valid_loader, model,
-            device='cpu', needs_init=True, constraint='None'):
+            device='cpu', constraint='None'):
 
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
     config_dict = vars(args)
@@ -111,7 +111,7 @@ def trainer(args, train_loader, valid_loader, model,
 
     elif args.constraint == 'scaddDS':
         const = ScAddDownscaleConstraints(args.s)
-    
+
 
     print('Nr of Trainable Params on {}:  '.format(device), params)
 
@@ -162,8 +162,8 @@ def trainer(args, train_loader, valid_loader, model,
             else:
                 y_hat = const(fake_img, x)
                 perc_loss = mse_loss(y_hat, y)
-            
-            g_loss = perc_loss + 01e-3 * adversarial_loss 
+
+            g_loss = perc_loss + 01e-3 * adversarial_loss
 
             g_loss.requires_grad_()
             g_loss.backward(retain_graph=True)

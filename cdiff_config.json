@@ -1,0 +1,85 @@
+{
+    "name": "tcw",
+    "phase": "train",
+    "gpu_ids": [1],
+    "path": {
+        "log": "logs",
+        "tb_logger": "tb_logger",
+        "results": "results",
+        "checkpoint": "checkpoint",
+        "resume_state": null
+    },
+    "datasets": {
+        "train": {
+            "name": "TCW",
+            "mode": "HR",
+            "dataroot": "data/era5_tcw/train",
+            "datatype": "lmdb",
+            "l_resolution": 16,
+            "r_resolution": 128,
+            "batch_size": 4,
+            "num_workers": 8,
+            "use_shuffle": true,
+            "data_len": -1
+        },
+        "val": {
+            "name": "TCW",
+            "mode": "LRHR",
+            "dataroot": "data/era5_tcw/train",
+            "datatype": "lmdb",
+            "l_resolution": 128,
+            "r_resolution": 128,
+            "data_len": 50
+        }
+    },
+    "model": {
+        "which_model_G": "cddpm",
+        "finetune_norm": false,
+        "unet": {
+            "in_channel": 2,
+            "out_channel": 1,
+            "inner_channel": 64,
+            "channel_multiplier": [1, 2, 4, 8, 8],
+            "attn_res": [16],
+            "res_blocks": 2,
+            "dropout": 0
+        },
+        "beta_schedule": {
+            "train": {
+                "schedule": "linear",
+                "n_timestep": 10,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            },
+            "val": {
+                "schedule": "linear",
+                "n_timestep": 10,
+                "linear_start": 1e-6,
+                "linear_end": 1e-2
+            }
+        },
+        "diffusion": {
+            "image_size": 128,
+            "channels": 1,
+            "conditional": true
+        }
+    },
+    "train": {
+        "n_iter": 150000,
+        "val_freq": 2e4,
+        "save_checkpoint_freq": 2e4,
+        "print_freq": 2000,
+        "optimizer": {
+            "type": "adam",
+            "lr": 1e-4
+        },
+        "ema_scheduler": {
+            "step_start_ema": 5000,
+            "update_ema_every": 1,
+            "ema_decay": 0.9999
+        }
+    },
+    "wandb": {
+        "project": "sr_ffhq"
+    }
+}

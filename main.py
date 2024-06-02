@@ -11,10 +11,12 @@ import os
 from data import dataloading
 
 # Models
-from models.architectures import srflow, srgan
+from models.architectures import srflow, srgan, cdiffusion
 
 # Optimization
 from optimization import trainer_srflow, trainer_srgan
+
+from utils import *
 
 # import evaluate
 import test
@@ -101,6 +103,24 @@ def main(args):
                                valid_loader=valid_loader,
                                model=model,
                                device=args.device)
+
+    if args.modeltype == "cdiff":
+        # model
+        opt = utils.load_config("cdiff_config.json")
+        model = cdiffusion.DDPM(opt)
+        quit()
+
+        if args.resume:
+            modelname = 'model_epoch_1_step_53000.tar'
+            modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)
+            ckpt = torch.load(modelpath)
+            model.load_state_dict(ckpt['model_state_dict'])
+
+        trainer_cdiff.trainer(args=args, train_loader=train_loader,
+                              valid_loader=valid_loader,
+                              model=model,
+                              device=args.device)
+
     else:
          print("Modeltype not available! Check spelling.")
 
@@ -153,7 +173,7 @@ if __name__ == "__main__":
                         help="# of residual-in-residual blocks LR network.")
     parser.add_argument("--condch", type=int, default=128//8,
                         help="# of residual-in-residual blocks in LR network.")
-    parser.add_argument("--constraint", type=dict, default='None' ,help="type of constraint to apply to loss func: [None, addDS, softmax, scaddDS]")
+    parser.add_argument("--constraint", type=str, default='None' ,help="type of constraint to apply to loss func: [None, add, soft, scadd, mul]")
 
     # diffusion model hparams
     parser.add_argument("--linear_start", type=float, default=1e-6,

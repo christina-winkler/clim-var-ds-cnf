@@ -84,7 +84,6 @@ def trainer(args, train_loader, valid_loader, model,
     writer.add_hparams({'lr': args.lr, 'bsize':args.bsz, 'Flow Steps':args.K,
                         'Levels':args.L}, {'nll_train': - np.inf})
 
-
     if torch.cuda.device_count() > 1 and args.train:
         print("Running on {} GPUs!".format(torch.cuda.device_count()))
         model = torch.nn.DataParallel(model)
