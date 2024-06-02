@@ -69,7 +69,7 @@ def main(args):
     if args.modeltype == "srflow":
 
         model = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
-                               args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
+                               args.bsz, args.s, args.nb, args.condch, args.noscale, args.noscaletest)
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
             modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)
@@ -148,15 +148,9 @@ if __name__ == "__main__":
                         help="If training should be resumed.")
 
     # hyperparameters
-    parser.add_argument("--nbits", type=int, default=8,
-                        help="Images converted to n-bit representations.")
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
-    parser.add_argument("--gauss_steps", type=int, default=1000,
-                        help="Number of gaussianization steps in diffusion process.")
-    parser.add_argument("--noise_sched", type=str, default='cosine',
-                        help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
-    parser.add_argument("--crop_size", type=int, default=500,
-                        help="Crop size when random cropping is applied.")
+    # parser.add_argument("--crop_size", type=int, default=500,
+    #                     help="Crop size when random cropping is applied.")
     parser.add_argument("--patch_size", type=int, default=500,
                         help="Training patch size.")
     parser.add_argument("--bsz", type=int, default=16, help="batch size")
@@ -171,13 +165,19 @@ if __name__ == "__main__":
                         help="# of residual-in-residual blocks LR network.")
     parser.add_argument("--condch", type=int, default=128//8,
                         help="# of residual-in-residual blocks in LR network.")
+
+    # diffusion model hparams
     parser.add_argument("--linear_start", type=float, default=1e-6,
                         help="Minimum value of the linear schedule (for diffusion model).")
     parser.add_argument("--linear_end", type=float, default=1e-2,
                         help="Maximum value of the linear schedule (for diffusion model).")
+    parser.add_argument("--gauss_steps", type=int, default=1000,
+                        help="Number of gaussianization steps in diffusion process.")
+    parser.add_argument("--noise_sched", type=str, default='cosine',
+                        help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
 
     # data
-    parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
+    parser.add_argument("--datadir", type=str, default="/home/christina/Documents/clim-var-ds-cnf/data",
                         help="Dataset to train the model on.")
     parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")

@@ -165,7 +165,7 @@ class NormFlowNet(nn.Module):
 
 class SRFlow(nn.Module):
     def __init__(self, input_shape, filter_size, L, K, bsz, s,
-                 nb, cond_channels=128, n_bits_x=8, noscale=False,
+                 nb, cond_channels=128, noscale=False,
                  noscaletest=False, testmode=False):
 
         super().__init__()
@@ -173,9 +173,6 @@ class SRFlow(nn.Module):
         self.flow = NormFlowNet(input_shape=input_shape, filter_size=filter_size,
                                 s=s, bsz=bsz, K=K, L=L, nb=nb, cond_channels=cond_channels,
                                 noscale=noscale, noscaletest=noscaletest, testmode=testmode)
-
-        # self._variational_dequantizer = None
-        self.nbins = 2 ** n_bits_x
 
     def forward(self, x_hr=None, xlr=None, z=None, logdet=0, eps=1.0, reverse=False,
                 use_stored=False):
@@ -189,8 +186,6 @@ class SRFlow(nn.Module):
 
     def normalizing_flow(self, x_hr, x_lr, eps):
 
-        # Dequantize pixels: Discrete -> Continuous
-        # z, logdet = self._dequantize_uniform(x_hr, self.nbins)
         z=x_hr
 
         # Initialize log determinant
@@ -211,20 +206,6 @@ class SRFlow(nn.Module):
                               reverse=True, use_stored=use_stored)
         return y_hat, logdet, log_pz
 
-    def _dequantize_uniform(self, x, n_bins):
-        """
-        Rescales pixels and adds uniform noise for dequantization.
-        """
-        unif_noise = torch.zeros_like(x).uniform_(0, float(1.0 / n_bins))
-        x = unif_noise + x
-
-        # Initialize log determinant
-        logdet = torch.zeros_like(x[:, 0, 0, 0])
-
-        # Log determinant adjusting for rescaling of 1/nbins for each pixel value
-        logdet += float(-np.log(n_bins) * np.prod(x.size()[1:]))
-        return x, logdet
-
     def _sample(self, x, eps=1.0):
         """
         Super-resolves a low-resolution image with estimated params.
@@ -233,4 +214,4 @@ class SRFlow(nn.Module):
 
         with torch.no_grad():
             samples = self.inverse_flow(z=None, xlr=x, eps=eps)[0]
-            return samples #samples.clamp(min=0, max=float(self.nbins - 1) / float(self.nbins))
+            return samples
