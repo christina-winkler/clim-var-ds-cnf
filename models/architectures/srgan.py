@@ -34,7 +34,6 @@ class ResidualDenseBlock_5C(nn.Module):
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
         return x5 * 0.2 + x
 
-
 class RRDB(nn.Module):
     '''Residual in Residual Dense Block'''
 
@@ -50,10 +49,12 @@ class RRDB(nn.Module):
         out = self.RDB3(out)
         return out * 0.2 + x
 
-
-class RRDBNet(nn.Module):
+class Generator(nn.Module):
+    """
+    RDDB Net type Generator.
+    """
     def __init__(self, in_nc, out_nc, nf, nb, s=2, gc=32):
-        super(RRDBNet, self).__init__()
+        super(Generator, self).__init__()
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
 
         self.s = s
@@ -82,3 +83,48 @@ class RRDBNet(nn.Module):
         out = self.conv_last(self.lrelu(self.HRconv(fea)))
 
         return out
+
+class Discriminator(nn.Module):
+    def __init__(self, in_channels) -> None:
+        super(Discriminator, self).__init__()
+        self.net = nn.Sequential(
+            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(64),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(128),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(256),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+
+            nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
+            nn.BatchNorm2d(512),
+            nn.LeakyReLU(0.2),
+
+            nn.AdaptiveAvgPool2d(1),
+            nn.Conv2d(512, 1024, kernel_size=1),
+            nn.LeakyReLU(0.2),
+            nn.Conv2d(1024, 1, kernel_size=1)
+        )
+
+    def forward(self, x):
+        batch_size = x.size(0)
+        return torch.sigmoid(self.net(x).view(batch_size))

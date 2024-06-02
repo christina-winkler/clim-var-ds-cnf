@@ -3,15 +3,12 @@ sys.path.append("../../")
 
 import argparse
 import torch
-
-# Dataset loading
-from data import dataloading
-
-# Utils
-import utils
 import random
 import numpy as np
 import os
+
+# Dataset loading
+from data import dataloading
 
 # Models
 from models.architectures import srflow, srgan
@@ -31,13 +28,8 @@ sys.path.append("../../")
 
 
 def main(args):
-    print(torch.cuda.device_count())
-    random.seed(0)
-    torch.manual_seed(0)
-    np.random.seed(0)
 
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    print('Num of avail GPUs:', torch.cuda.device_count())
 
     # Initialize device on which to run the model
     if torch.cuda.is_available():
@@ -82,9 +74,9 @@ def main(args):
                                device=args.device)
 
 
-    if args.modeltype == "srgan_stoch":
+    if args.modeltype == "srgan":
 
-        generator = srgan2_stochastic.RRDBNet(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+        generator = srgan.Generator(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
         discriminator = srgan.Discriminator(in_channels)
         model = (generator, discriminator)
 
@@ -149,10 +141,6 @@ if __name__ == "__main__":
 
     # hyperparameters
     parser.add_argument("--s", type=int, default=2, help="Upscaling factor.")
-    # parser.add_argument("--crop_size", type=int, default=500,
-    #                     help="Crop size when random cropping is applied.")
-    parser.add_argument("--patch_size", type=int, default=500,
-                        help="Training patch size.")
     parser.add_argument("--bsz", type=int, default=16, help="batch size")
     parser.add_argument("--lr", type=float, default=0.0002,
                         help="learning rate")
@@ -165,6 +153,7 @@ if __name__ == "__main__":
                         help="# of residual-in-residual blocks LR network.")
     parser.add_argument("--condch", type=int, default=128//8,
                         help="# of residual-in-residual blocks in LR network.")
+    parser.add_argument("--constraint", type=dict, default='None' ,help="type of constraint to apply to loss func: [None, addDS, softmax, scaddDS]")
 
     # diffusion model hparams
     parser.add_argument("--linear_start", type=float, default=1e-6,
