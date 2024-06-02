@@ -14,7 +14,7 @@ from data import dataloading
 from models.architectures import srflow, srgan, cdiffusion
 
 # Optimization
-from optimization import trainer_srflow, trainer_srgan
+from optimization import trainer_srflow, trainer_srgan, trainer_cdiff
 
 from utils import *
 
@@ -105,10 +105,10 @@ def main(args):
                                device=args.device)
 
     if args.modeltype == "cdiff":
+
         # model
         opt = utils.load_config("cdiff_config.json")
         model = cdiffusion.DDPM(opt)
-        quit()
 
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
@@ -119,6 +119,7 @@ def main(args):
         trainer_cdiff.trainer(args=args, train_loader=train_loader,
                               valid_loader=valid_loader,
                               model=model,
+                              opt=opt,
                               device=args.device)
 
     else:
