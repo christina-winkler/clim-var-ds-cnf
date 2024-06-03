@@ -62,8 +62,9 @@ def main(args):
 
     if args.modeltype == "srflow":
 
+        print("Hard Constraint:", args.constraint)
         model = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
-                               args.bsz, args.s, args.nb, args.condch, args.noscale, args.noscaletest)
+                               args.bsz, args.s, args.constraint, args.nb, args.condch, args.noscale, args.noscaletest)
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
             modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)

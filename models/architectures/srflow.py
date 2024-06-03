@@ -5,7 +5,7 @@ import random
 
 from models.transformations import modules_sr as modules
 from models.architectures import RRDBNet_arch as arch
-from models.architectures import loss_constraints
+from models.architectures.loss_constraints import *
 
 random.seed(0)
 torch.manual_seed(0)
@@ -16,7 +16,7 @@ torch.backends.cudnn.benchmark = False
 
 
 class LrNet(nn.Module):
-    def __init__(self, in_c, cond_channels, s, input_shape, nb, constraints, gc=32):
+    def __init__(self, in_c, cond_channels, s, input_shape, nb, constraint, gc=32):
         """
         Args:
             in_c (int): Number of input channels.
@@ -32,17 +32,17 @@ class LrNet(nn.Module):
         (c, w, h) = input_shape
         self.RRDBNet = arch.RRDBNet(in_c, cond_channels, nb, s, input_shape, gc=gc)
         self.is_constraints = False
-        if constraints == 'softmax':
-            self.constraints = SoftmaxConstraints(upsampling_factor=upsampling_factor)
+        if constraint == 'softmax':
+            self.constraints = SoftmaxConstraints(upsampling_factor=s)
             self.is_constraints = True
-        elif constraints == 'scadd':
-            self.constraints = ScAddDownscaleConstraints(upsampling_factor=upsampling_factor)
+        elif constraint == 'scadd':
+            self.constraints = ScAddDownscaleConstraints(upsampling_factor=s)
             self.is_constraints = True
-        elif constraints == 'add':
-            self.constraints = AddDownscaleConstraints(upsampling_factor=upsampling_factor)
+        elif constraint == 'add':
+            self.constraints = AddDownscaleConstraints(upsampling_factor=s)
             self.is_constraints = True
-        elif constraints == 'mult':
-            self.constraints = MultDownscaleConstraints(upsampling_factor=upsampling_factor)
+        elif constraint == 'mult':
+            self.constraints = MultDownscaleConstraints(upsampling_factor=s)
             self.is_constraints = True
 
     def forward(self, x):
@@ -89,7 +89,7 @@ class FlowStep(nn.Module):
 
 
 class NormFlowNet(nn.Module):
-    def __init__(self, input_shape, filter_size, bsz, s,
+    def __init__(self, input_shape, filter_size, bsz, s, constraint,
                  L, K, nb, cond_channels, noscale, noscaletest, testmode):
 
         super().__init__()
@@ -100,7 +100,7 @@ class NormFlowNet(nn.Module):
         self.testmode = testmode
         self.output_shapes = []
         self.layers = nn.ModuleList()
-        self.lrNet = LrNet(in_c=1, cond_channels=cond_channels, s=s,
+        self.lrNet = LrNet(in_c=1, cond_channels=cond_channels, s=s, constraint=constraint,
                            input_shape=(C, W // s, H // s), nb=nb)
 
         self.downsample_convs = nn.ModuleList()
@@ -179,13 +179,13 @@ class NormFlowNet(nn.Module):
 
 
 class SRFlow(nn.Module):
-    def __init__(self, input_shape, filter_size, L, K, bsz, s,
+    def __init__(self, input_shape, filter_size, L, K, bsz, s, constraint,
                  nb, cond_channels=128, noscale=False,
                  noscaletest=False, testmode=False):
 
         super().__init__()
 
-        self.flow = NormFlowNet(input_shape=input_shape, filter_size=filter_size,
+        self.flow = NormFlowNet(input_shape=input_shape, filter_size=filter_size, constraint=constraint,
                                 s=s, bsz=bsz, K=K, L=L, nb=nb, cond_channels=cond_channels,
                                 noscale=noscale, noscaletest=noscaletest, testmode=testmode)
 
