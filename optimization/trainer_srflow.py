@@ -50,7 +50,7 @@ def trainer(args, train_loader, valid_loader, model,
 
     # wandb.init(project="arflow", config=config_dict)
     args.experiment_dir = os.path.join('runs',
-                                        args.modeltype + '_' + args.trainset + '_' + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
+                                        args.modeltype + '_' + args.trainset + '_' + args.constraint + '_' + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
 
     os.makedirs(args.experiment_dir, exist_ok=True)
     config_dict = vars(args)
@@ -164,7 +164,7 @@ def trainer(args, train_loader, valid_loader, model,
 
                      # Super-Resolving low-res
                     y_hat, logdet, logpz = model(xlr=x, reverse=True, eps=0.8)
-                    import pdb; pdb.set_trace()
+
                     # print(y_hat.max(), y_hat.min(), y.max(), y.min())
                     grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=False, nrow=3)
                     plt.figure()

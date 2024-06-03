@@ -175,7 +175,7 @@ if __name__ == "__main__":
                         help="# of residual-in-residual blocks LR network.")
     parser.add_argument("--condch", type=int, default=128//8,
                         help="# of residual-in-residual blocks in LR network.")
-    parser.add_argument("--constraint", type=str, default='None' ,help="type of constraint to apply to loss func: [None, add, soft, scadd, mul]")
+    parser.add_argument("--constraint", type=str, default='None' ,help="type of constraint to apply to loss func: [None, add, softmax, scadd, mul]")
 
     # diffusion model hparams
     parser.add_argument("--linear_start", type=float, default=1e-6,
@@ -188,7 +188,7 @@ if __name__ == "__main__":
                         help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
 
     # data
-    parser.add_argument("--datadir", type=str, default="/home/christina/Documents/clim-var-ds-cnf/data",
+    parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
                         help="Dataset to train the model on.")
     parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")
