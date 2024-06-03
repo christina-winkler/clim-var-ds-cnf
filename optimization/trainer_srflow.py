@@ -20,6 +20,8 @@ from skimage.transform import resize
 import torchvision
 from tensorboardX import SummaryWriter
 
+from loss_constraints import *
+
 import wandb
 os.environ["WANDB_SILENT"] = "true"
 
