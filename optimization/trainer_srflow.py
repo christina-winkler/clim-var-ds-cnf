@@ -20,7 +20,7 @@ from skimage.transform import resize
 import torchvision
 from tensorboardX import SummaryWriter
 
-from loss_constraints import *
+from optimization.loss_constraints import *
 
 import wandb
 os.environ["WANDB_SILENT"] = "true"
@@ -86,6 +86,14 @@ def trainer(args, train_loader, valid_loader, model,
     writer.add_hparams({'lr': args.lr, 'bsize':args.bsz, 'Flow Steps':args.K,
                         'Levels':args.L}, {'nll_train': - np.inf})
 
+    constraint_dict = {
+    "mul": MultDownscaleConstraints,
+    "add": AddDownscaleConstraints,
+    "scadd": ScAddDownscaleConstraints,
+    "soft": SoftmaxConstraints}
+
+    conservation_loss = ConservationLoss()
+
     if torch.cuda.device_count() > 1 and args.train:
         print("Running on {} GPUs!".format(torch.cuda.device_count()))
         model = torch.nn.DataParallel(model)
@@ -114,10 +122,14 @@ def trainer(args, train_loader, valid_loader, model,
             z, nll = model.forward(x_hr=y, xlr=x)
 
             writer.add_scalar("nll_train", nll.mean().item(), step)
-            # wandb.log({"nll_train": nll.mean().item()}, step)
 
             # Compute gradients
-            loss = nll
+            if args.constraint == 'None':
+                loss = nll + conservation_loss(x,y)
+            else:
+                constraint = constraint_dict[args.constraint]
+                loss = nll + 0.4 * constraint(y,x) + conservation_loss(x,y)
+
             loss.mean().backward()
 
             # Update model parameters using calculated gradients
@@ -165,6 +177,7 @@ def trainer(args, train_loader, valid_loader, model,
 
                      # Super-Resolving low-res
                     y_hat, logdet, logpz = model(xlr=x, reverse=True, eps=0.8)
+                    import pdb; pdb.set_trace()
                     # print(y_hat.max(), y_hat.min(), y.max(), y.min())
                     grid_y_hat = torchvision.utils.make_grid(y_hat[0:9, :, :, :].cpu(), normalize=False, nrow=3)
                     plt.figure()

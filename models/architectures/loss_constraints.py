@@ -1,8 +1,21 @@
+"""
+This script implements constraints for mass conservation in downscaling operations using PyTorch.
+Taken from: https://github.com/RolnickLab/constrained-downscaling/blob/main/models.py
+Classes:
+    - MultDownscaleConstraints: Enforces multiplicative constraints.
+    - AddDownscaleConstraints: Enforces additive constraints.
+    - ScAddDownscaleConstraints: Enforces signed additive constraints.
+    - SoftmaxConstraints: Enforces softmax constraints.
+
+Each class defines a downscaling method that aims to ensure the total mass is conserved during the transformation process.
+"""
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import numpy as np
 from torch.autograd import Variable
+
 
 class MultDownscaleConstraints(nn.Module):
     """mul"""
@@ -45,7 +58,7 @@ class ScAddDownscaleConstraints(nn.Module):
         return out
 
 class SoftmaxConstraints(nn.Module):
-    """soft"""
+    """softmax"""
     def __init__(self, upsampling_factor, exp_factor=1):
         super(SoftmaxConstraints, self).__init__()
         self.upsampling_factor = upsampling_factor

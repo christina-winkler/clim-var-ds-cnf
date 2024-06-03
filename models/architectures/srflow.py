@@ -5,6 +5,7 @@ import random
 
 from models.transformations import modules_sr as modules
 from models.architectures import RRDBNet_arch as arch
+from models.architectures import loss_constraints
 
 random.seed(0)
 torch.manual_seed(0)
@@ -15,7 +16,7 @@ torch.backends.cudnn.benchmark = False
 
 
 class LrNet(nn.Module):
-    def __init__(self, in_c, cond_channels, s, input_shape, nb, gc=32):
+    def __init__(self, in_c, cond_channels, s, input_shape, nb, constraints, gc=32):
         """
         Args:
             in_c (int): Number of input channels.
@@ -30,11 +31,25 @@ class LrNet(nn.Module):
         super().__init__()
         (c, w, h) = input_shape
         self.RRDBNet = arch.RRDBNet(in_c, cond_channels, nb, s, input_shape, gc=gc)
+        self.is_constraints = False
+        if constraints == 'softmax':
+            self.constraints = SoftmaxConstraints(upsampling_factor=upsampling_factor)
+            self.is_constraints = True
+        elif constraints == 'scadd':
+            self.constraints = ScAddDownscaleConstraints(upsampling_factor=upsampling_factor)
+            self.is_constraints = True
+        elif constraints == 'add':
+            self.constraints = AddDownscaleConstraints(upsampling_factor=upsampling_factor)
+            self.is_constraints = True
+        elif constraints == 'mult':
+            self.constraints = MultDownscaleConstraints(upsampling_factor=upsampling_factor)
+            self.is_constraints = True
 
     def forward(self, x):
         out = self.RRDBNet(x)
+        if self.is_constraints:
+            out = self.constraints(out,  x)
         return out
-
 
 class FlowStep(nn.Module):
     def __init__(self, level, s, channel_dim, input_shape, filter_size,
