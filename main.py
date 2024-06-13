@@ -146,6 +146,8 @@ if __name__ == "__main__":
                         help="Interval in which results should be logged.")
     parser.add_argument("--val_interval", type=int, default=250,
                         help="Interval in which model should be validated.")
+    parser.add_argument("--addstring", type=str, default='',
+                        help="String to be added to experiment name.")
 
     # runtime configs
     parser.add_argument("--visual", action="store_true",

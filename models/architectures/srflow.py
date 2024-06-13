@@ -2,6 +2,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 import random
+import pdb
 
 from models.transformations import modules_sr as modules
 from models.architectures import RRDBNet_arch as arch
@@ -31,24 +32,24 @@ class LrNet(nn.Module):
         super().__init__()
         (c, w, h) = input_shape
         self.RRDBNet = arch.RRDBNet(in_c, cond_channels, nb, s, input_shape, gc=gc)
-        self.is_constraints = False
-        if constraint == 'softmax':
-            self.constraints = SoftmaxConstraints(upsampling_factor=s)
-            self.is_constraints = True
-        elif constraint == 'scadd':
-            self.constraints = ScAddDownscaleConstraints(upsampling_factor=s)
-            self.is_constraints = True
-        elif constraint == 'add':
-            self.constraints = AddDownscaleConstraints(upsampling_factor=s)
-            self.is_constraints = True
-        elif constraint == 'mult':
-            self.constraints = MultDownscaleConstraints(upsampling_factor=s)
-            self.is_constraints = True
+        # self.is_constraints = False
+        # if constraint == 'softmax':
+        #     self.constraints = SoftmaxConstraints(upsampling_factor=s)
+        #     self.is_constraints = True
+        # elif constraint == 'scadd':
+        #     self.constraints = ScAddDownscaleConstraints(upsampling_factor=s)
+        #     self.is_constraints = True
+        # elif constraint == 'add':
+        #     self.constraints = AddDownscaleConstraints(upsampling_factor=s)
+        #     self.is_constraints = True
+        # elif constraint == 'mult':
+        #     self.constraints = MultDownscaleConstraints(upsampling_factor=s)
+        #     self.is_constraints = True
 
     def forward(self, x):
         out = self.RRDBNet(x)
-        if self.is_constraints:
-            out = self.constraints(out,  x)
+        # if self.is_constraints:
+        #     out = self.constraints(out,  x)
         return out
 
 class FlowStep(nn.Module):
@@ -150,7 +151,6 @@ class NormFlowNet(nn.Module):
                         z = layer(z, reverse=False)
 
                     elif isinstance(layer, FlowStep):
-
                         z, logdet = layer(z, lr_feat_map=lr_downsampled_feats[i + 1],
                                           x_lr=xlr, logdet=logdet, reverse=False)
 
@@ -196,8 +196,7 @@ class SRFlow(nn.Module):
             return self.normalizing_flow(x_hr, xlr, eps=eps)
 
         else:
-            return self.inverse_flow(z=z, xlr=xlr, logdet=logdet,
-                                     eps=eps, use_stored=use_stored)
+            return self.inverse_flow(z=z, xlr=xlr, logdet=logdet, eps=eps, use_stored=use_stored)
 
     def normalizing_flow(self, x_hr, x_lr, eps):
 
@@ -217,8 +216,11 @@ class SRFlow(nn.Module):
         return z, x_nll
 
     def inverse_flow(self, z, xlr, eps=1.0, logdet=0, use_stored=False):
-        y_hat, logdet, log_pz = self.flow.forward(z, logdet=logdet, xlr=xlr, eps=eps,
-                              reverse=True, use_stored=use_stored)
+        y_hat, logdet, log_pz = self.flow.forward(z, logdet=logdet, xlr=xlr, eps=eps, reverse=True, use_stored=use_stored)
+
+        if self.is_constraints:
+            y_hat = self.constraints(y_hat,  xlr)
+
         return y_hat, logdet, log_pz
 
     def _sample(self, x, eps=1.0):

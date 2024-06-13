@@ -840,9 +840,9 @@ if __name__ == "__main__":
     # modelname = 'model_epoch_8_step_10250'
     # modelpath =  '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_addDS__2023_11_13_15_57_11_4x/model_checkpoints/{}.tar'.format(modelname)
 
-    # 2x watercontent None
-    modelname = 'model_epoch_8_step_10500'
-    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
+    # # 2x watercontent None
+    # modelname = 'model_epoch_8_step_10500'
+    # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
 
     # modelname = 'model_epoch_4_step_29000'
     # modelpath = '/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_23_13_00_15/model_checkpoints/{}.tar'.format(modelname)
@@ -860,8 +860,12 @@ if __name__ == "__main__":
     # modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_softmax__2023_11_10_11_19_16_4x/model_checkpoints/{}.tar'.format(modelname)
 
     # 2x watercontent
-    gen_modelname = 'generator_epoch_2_step_7250'
-    gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_stoch_era5-TCW_None__2023_11_16_05_31_20_2x/model_checkpoints/{}.tar'.format(gen_modelname)
+    # gen_modelname = 'generator_epoch_2_step_7250'
+    # gen_modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srgan_stoch_era5-TCW_None__2023_11_16_05_31_20_2x/model_checkpoints/{}.tar'.format(gen_modelname)
+
+    # 2x watercontent mul with constraint at the end 
+    modelname = 'model_epoch_8_step_10500'
+    modelpath = '/home/mila/c/christina.winkler/clim-var-ds-cnf/runs/srflow_era5-TCW_None__2023_11_13_15_57_17_2x/model_checkpoints/{}.tar'.format(modelname)
 
     model = srflow.SRFlow((in_channels, args.height, args.width), args.filter_size, args.L, args.K,
                            args.bsz, args.s, args.nb, args.condch, args.nbits, args.noscale, args.noscaletest)
