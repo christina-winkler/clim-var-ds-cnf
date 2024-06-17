@@ -32,24 +32,9 @@ class LrNet(nn.Module):
         super().__init__()
         (c, w, h) = input_shape
         self.RRDBNet = arch.RRDBNet(in_c, cond_channels, nb, s, input_shape, gc=gc)
-        # self.is_constraints = False
-        # if constraint == 'softmax':
-        #     self.constraints = SoftmaxConstraints(upsampling_factor=s)
-        #     self.is_constraints = True
-        # elif constraint == 'scadd':
-        #     self.constraints = ScAddDownscaleConstraints(upsampling_factor=s)
-        #     self.is_constraints = True
-        # elif constraint == 'add':
-        #     self.constraints = AddDownscaleConstraints(upsampling_factor=s)
-        #     self.is_constraints = True
-        # elif constraint == 'mult':
-        #     self.constraints = MultDownscaleConstraints(upsampling_factor=s)
-        #     self.is_constraints = True
 
     def forward(self, x):
         out = self.RRDBNet(x)
-        # if self.is_constraints:
-        #     out = self.constraints(out,  x)
         return out
 
 class FlowStep(nn.Module):
@@ -184,6 +169,22 @@ class SRFlow(nn.Module):
                  noscaletest=False, testmode=False):
 
         super().__init__()
+
+        self.is_constraints = False
+        if constraint == 'softmax':
+            self.constraints = SoftmaxConstraints(upsampling_factor=s)
+            self.is_constraints = True
+        elif constraint == 'scadd':
+            self.constraints = ScAddDownscaleConstraints(upsampling_factor=s)
+            self.is_constraints = True
+        elif constraint == 'add':
+            self.constraints = AddDownscaleConstraints(upsampling_factor=s)
+            self.is_constraints = True
+        elif constraint == 'mult':
+            self.constraints = MultDownscaleConstraints(upsampling_factor=s)
+            self.is_constraints = True
+        else:
+            self.constraints = None  # No constraints specified
 
         self.flow = NormFlowNet(input_shape=input_shape, filter_size=filter_size, constraint=constraint,
                                 s=s, bsz=bsz, K=K, L=L, nb=nb, cond_channels=cond_channels,
