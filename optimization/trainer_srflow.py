@@ -40,7 +40,7 @@ class MinMaxScaler:
 
 def inv_scaler(x):
     min_value = 0
-    max_value = 100
+    max_value = 124
     return x * (max_value - min_value) + min_value
 
 def trainer(args, train_loader, valid_loader, model,
