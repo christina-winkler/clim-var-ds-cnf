@@ -43,11 +43,8 @@ class ERA5WTCData(Dataset):
         self.inputs = torch.load(self.data_path + '/input.pt')
         self.targets = torch.load(self.data_path + '/target.pt')
 
-        self.mean = self.targets.mean()
-        self.std = self.targets.std()
-
-        min_val = self.targets.min()
-        max_val = self.targets.max()
+        min_val = 0 # precomputed self.targets.min()
+        max_val = 124 # precomputed self.targets.max()
 
         self.transform = MinMaxScaler(max_value=max_val, min_value=min_val,
                                       values_range=(0,1))
@@ -56,7 +53,7 @@ class ERA5WTCData(Dataset):
 
     def __getitem__(self, idx):
         x,y = self.inputs[idx], self.targets[idx]
-        
+
         if self.s != None: # by default dataset is stored as 4x downsampling
             x = np.zeros((1,1,y.shape[2]//self.s, y.shape[2]//self.s))
             x[0,0,...] = resize(y[0,0,...], (y.shape[2]//self.s, y.shape[3]//self.s), anti_aliasing=True)
