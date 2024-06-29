@@ -131,31 +131,61 @@ def euclidean_distances(x, y, squared=False):
         return distances.sqrt()
 
 def crps_ensemble(observation, forecasts):
-    # explanation: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003120
-    # forceasts contains n predicted frames
-    _,_,h,w = observation.shape
+    _, _, h, w = observation.shape
     observation = observation.detach().cpu().numpy()
     forecasts = forecasts.detach().cpu().numpy()
 
     fc = forecasts.copy()
     fc.sort(axis=1)
     obs = observation
-    fc_below = fc<obs[:,None,...]
+    fc_below = fc < obs[:, None, ...]
     crps = np.zeros_like(obs)
-    for i in range(fc.shape[1]):
-        below = fc_below[:,i,...]
-        weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
-        crps[below] += weight * (obs[below]-fc[:,i,...][below])
+    crps_values = np.zeros((obs.shape[0], fc.shape[1], h, w))  # Array to store CRPS for each forecast
 
-    for i in range(fc.shape[1]-1,-1,-1):
-        above  = ~fc_below[:,i,...]
-        k = fc.shape[1]-1-i
-        weight = ((k+1)**2 - k**2) / fc.shape[1]**2
-        crps[above] += weight * (fc[:,i,...][above]-obs[above])
-    crps = np.sum(crps, axis=1)
-    crps = np.sum(crps, axis=1)
-    crps = np.sum(crps, axis=1)
-    return crps / (h*w) # np.mean(crps)
+    for i in range(fc.shape[1]):
+        below = fc_below[:, i, ...]
+        weight = ((i + 1) ** 2 - i ** 2) / fc.shape[1] ** 2
+        crps_value = weight * (obs[below] - fc[:, i, ...][below])
+        crps_values[:, i, ...][below] = crps_value
+
+    for i in range(fc.shape[1] - 1, -1, -1):
+        above = ~fc_below[:, i, ...]
+        k = fc.shape[1] - 1 - i
+        weight = ((k + 1) ** 2 - k ** 2) / fc.shape[1] ** 2
+        crps_value = weight * (fc[:, i, ...][above] - obs[above])
+        crps_values[:, i, ...][above] = crps_value
+
+    crps_sum = np.sum(crps_values, axis=(2, 3))
+    crps_mean = np.mean(crps_sum, axis=1)
+
+    return crps_sum, crps_mean  # Return both sum of CRPS and mean CRPS
+
+# def crps_ensemble(observation, forecasts):
+#     # explanation: https://agupubs.onlinelibrary.wiley.com/doi/full/10.1029/2022MS003120
+#     # forceasts contains n predicted frames
+#     _,_,h,w = observation.shape
+#     observation = observation.detach().cpu().numpy()
+#     forecasts = forecasts.detach().cpu().numpy()
+#
+#     fc = forecasts.copy()
+#     fc.sort(axis=1)
+#     obs = observation
+#     fc_below = fc<obs[:,None,...]
+#     crps = np.zeros_like(obs)
+#     for i in range(fc.shape[1]):
+#         below = fc_below[:,i,...]
+#         weight = ((i+1)**2 - i**2) / fc.shape[-1]**2
+#         crps[below] += weight * (obs[below]-fc[:,i,...][below])
+#
+#     for i in range(fc.shape[1]-1,-1,-1):
+#         above  = ~fc_below[:,i,...]
+#         k = fc.shape[1]-1-i
+#         weight = ((k+1)**2 - k**2) / fc.shape[1]**2
+#         crps[above] += weight * (fc[:,i,...][above]-obs[above])
+#     crps = np.sum(crps, axis=1)
+#     crps = np.sum(crps, axis=1)
+#     crps = np.sum(crps, axis=1)
+#     return crps / (h*w) # np.mean(crps)
 
 # def EMD(x, y):
 #     """Computes EMD / Wasserstein Distance"""
