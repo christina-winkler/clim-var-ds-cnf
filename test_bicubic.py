@@ -123,13 +123,13 @@ def test(test_loader, args, exp_name='basline'):
     color = 'inferno' if args.trainset == 'era5-T2M' else 'viridis'
     savedir_viz = "experiments/{}_{}_{}x/snapshots/test/".format(exp_name, args.trainset, args.s)
     savedir_txt = 'experiments/{}_{}_{}x/'.format(exp_name, args.trainset, args.s)
-    
-    os.makedirs(savedir_txt, exist_ok=True)     
-    os.makedirs(savedir_viz, exist_ok=True)    
-    
+
+    os.makedirs(savedir_txt, exist_ok=True)
+    os.makedirs(savedir_viz, exist_ok=True)
+
     mse = []
     mae = []
-    rmse = [] 
+    rmse = []
 
     with torch.no_grad():
         for batch_idx, item in enumerate(test_loader):
@@ -148,52 +148,52 @@ def test(test_loader, args, exp_name='basline'):
             # y_hat = cv2.resize(x.cpu().numpy(), fx=args.s, fy=args.s, interpolation=cv2.INTER_CUBIC)
 
             # Visualize low resolution GT
-            grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :], normalize=True, nrow=3)
-            plt.figure()
-            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
-            plt.axis('off')
-            # plt.title("Low-Res GT (train)")
-            # plt.show()
-            plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.close()
-
-            # Visualize High-Res GT
-            grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :], normalize=True, nrow=3)
-            plt.figure()
-            plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
-            plt.axis('off')
-            # plt.title("High-Res GT")
-            # plt.show()
-            plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.close()
-
-            grid_y_hat = torchvision.utils.make_grid(y_hat[0:9,:,:,:], normalize=True, nrow=3)
-            plt.figure()
-            plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
-            plt.axis('off')
-            # plt.title("Prediction at t (test), mu=0")
-            plt.savefig(savedir_viz + "y_hat{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
-            plt.close()
-
-            abs_err = torch.abs(inv_scaler(y_hat, y_unorm.min(), y_unorm.max()) - y_unorm)
-            grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
-            plt.figure()
-            plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='magma')
-            plt.axis('off')
-            # plt.title("Abs Err")
-            plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.close()
+            # grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :], normalize=True, nrow=3)
+            # plt.figure()
+            # plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=color)
+            # plt.axis('off')
+            # # plt.title("Low-Res GT (train)")
+            # # plt.show()
+            # plt.savefig(savedir_viz + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
+            #
+            # # Visualize High-Res GT
+            # grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :], normalize=True, nrow=3)
+            # plt.figure()
+            # plt.imshow(grid_high_res_gt.permute(1, 2, 0)[:,:,0], cmap=color)
+            # plt.axis('off')
+            # # plt.title("High-Res GT")
+            # # plt.show()
+            # plt.savefig(savedir_viz + '/high_res_gt_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
+            #
+            # grid_y_hat = torchvision.utils.make_grid(y_hat[0:9,:,:,:], normalize=True, nrow=3)
+            # plt.figure()
+            # plt.imshow(grid_y_hat.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
+            # plt.axis('off')
+            # # plt.title("Prediction at t (test), mu=0")
+            # plt.savefig(savedir_viz + "y_hat{}_test.png".format(batch_idx), dpi=300,bbox_inches='tight')
+            # plt.close()
+            #
+            # abs_err = torch.abs(inv_scaler(y_hat, y_unorm.min(), y_unorm.max()) - y_unorm)
+            # grid_abs_error = torchvision.utils.make_grid(abs_err[0:9,:,:,:].cpu(), normalize=True, nrow=3)
+            # plt.figure()
+            # plt.imshow(grid_abs_error.permute(1, 2, 0)[:,:,0], cmap='magma')
+            # plt.axis('off')
+            # # plt.title("Abs Err")
+            # plt.savefig(savedir_viz + '/abs_err_{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
 
             print("Evaluate Predictions on visual metrics... ")
 
             # MAE
             mae.append(metrics.MAE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
-                   
+
             print('Current MAE', np.mean(mae),mae[-1])
 
             mse.append(metrics.MSE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).mean().detach().cpu().numpy())
             print('Current MSE', np.mean(mse), mse[-1])
-            
+
             # RMSE
             rmse.append(metrics.RMSE(inv_scaler(y_hat, min_value=y_unorm.min(), max_value=y_unorm.max()), y_unorm).detach().cpu().numpy())
             print('Current RMSE', np.mean(rmse), rmse[-1])
