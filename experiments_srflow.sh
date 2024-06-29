@@ -13,7 +13,7 @@
 module load anaconda/3
 
 # Activate your environment
-source activate sr
+conda activate sr
 
 # Array of experiments with GPU requests
 EXPERIMENTS=(
