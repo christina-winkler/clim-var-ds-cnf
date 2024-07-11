@@ -11,6 +11,24 @@ def make_layer(block, n_layers):
         layers.append(block())
     return nn.Sequential(*layers)
 
+class GaussianPrior(nn.Module):
+    def __init__(self, in_c, cond_channels):
+        super(GaussianPrior, self).__init__()
+
+        self.cond_channels = cond_channels
+        self.conv = nn.Conv2d(in_c, 2, kernel_size=3, stride=1, padding=1) 
+
+    def final_prior(self, feat_map):
+        h = self.conv(feat_map)
+        mean, sigma = h[:, 0].unsqueeze(1), nn.functional.softplus(h[:, 1].unsqueeze(1).type(torch.DoubleTensor).cuda())
+        return mean, sigma
+
+    def forward(self, feat_map, eps=1.0):
+        # sample from conditional prior
+        mean, sigma = self.final_prior(feat_map)
+        prior = torch.distributions.normal.Normal(loc=mean, scale=sigma*eps+0.00001)
+        z = prior.sample().type(torch.FloatTensor).cuda()
+        return z
 
 class ResidualDenseBlock_5C(nn.Module):
     def __init__(self, nf=64, gc=32, bias=True):
@@ -58,8 +76,9 @@ class Generator(nn.Module):
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
 
         self.s = s
+        self.cond_prior = GaussianPrior(in_c=in_nc, cond_channels=128).cuda()
 
-        self.conv_first = nn.Conv2d(2, nf, 3, 1, 1, bias=True)
+        self.conv_first = nn.Conv2d(1, nf, 3, 1, 1, bias=True)
         self.RRDB_trunk = make_layer(RRDB_block_f, nb)
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         #### upsampling
@@ -67,14 +86,17 @@ class Generator(nn.Module):
         self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.HRconv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.conv_last = nn.Conv2d(nf, out_nc, 3, 1, 1, bias=True)
-
+        
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        noise = torch.randn_like(x)
-        input = torch.cat((x,noise), dim=1)
-        # pdb.set_trace()
-        fea = self.conv_first(input)
+        # noise = torch.randn_like(x)
+        # input = torch.cat((x,noise), dim=1)
+
+        # sample z from conditional base density
+        z = self.cond_prior(x)
+        
+        fea = self.conv_first(z)
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 
