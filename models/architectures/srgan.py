@@ -81,6 +81,7 @@ class Generator(nn.Module):
         self.conv_first = nn.Conv2d(1, nf, 3, 1, 1, bias=True)
         self.RRDB_trunk = make_layer(RRDB_block_f, nb)
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
+        
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
@@ -90,8 +91,6 @@ class Generator(nn.Module):
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
     def forward(self, x):
-        # noise = torch.randn_like(x)
-        # input = torch.cat((x,noise), dim=1)
 
         # sample z from conditional base density
         z = self.cond_prior(x)
@@ -100,7 +99,7 @@ class Generator(nn.Module):
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 
-        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=self.s, mode='nearest')))
+        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=self.s, mode='bicubic')))
         # fea = self.lrelu(self.upconv2(F.interpolate(fea, scale_factor=2, mode='nearest')))
         out = self.conv_last(self.lrelu(self.HRconv(fea)))
 

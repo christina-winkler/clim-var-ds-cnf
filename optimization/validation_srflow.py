@@ -48,7 +48,7 @@ def validate(model, val_loader, metric_dict, exp_name, logstep, args):
             if batch_idx == 20:
                 break
 
-        # evalutae for different temperatures
+        # evaluate for different temperatures
         mu0, _, _ = model(xlr=x, reverse=True, eps=0)
         mu05, _, _ = model(xlr=x, reverse=True, eps=0.5)
         mu08, _, _ = model(xlr=x, reverse=True, eps=0.8)

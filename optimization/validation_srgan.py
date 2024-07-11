@@ -19,14 +19,14 @@ import pdb
 
 def inv_scaler(x, args):
     min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
-    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    max_value = 124 if args.trainset == 'era5-TCW' else 241.22385
     x = x * (max_value - min_value) + min_value
     return x
 
 def minmax_scaler(x, args):
     values_range = (-1, 1)
     min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
-    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    max_value = 124 if args.trainset == 'era5-TCW' else 241.22385
     x = (x - min_value) / (max_value - min_value)
     return x * (values_range[1] - values_range[0]) + values_range[0]
 

@@ -1,0 +1,6 @@
+[=== Module anaconda/3 loaded ===]
+srun: Job step aborted: Waiting up to 32 seconds for job step to finish.
+slurmstepd: error: *** STEP 5028200.0 ON cn-c040 CANCELLED AT 2024-07-11T10:13:32 ***
+slurmstepd: error: *** JOB 5028200 ON cn-c040 CANCELLED AT 2024-07-11T10:13:32 ***
+slurmstepd: error: container_p_join: open failed for /var/opt/slurm/localstorage/5028200/.ns: No such file or directory
+slurmstepd: error: container_g_join(5028200): No such file or directory

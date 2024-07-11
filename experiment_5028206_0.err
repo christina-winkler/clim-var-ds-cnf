@@ -1,0 +1,6 @@
+[=== Module anaconda/3 loaded ===]
+WARNING:root:NaN or Inf found in input tensor.
+/home/mila/c/christina.winkler/.conda/envs/sr/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Applied workaround for CuDNN issue, install nvrtc.so (Triggered internally at ../aten/src/ATen/native/cudnn/Conv_v8.cpp:80.)
+  return F.conv2d(input, weight, bias, self.stride,
+slurmstepd: error: *** JOB 5028208 ON cn-c014 CANCELLED AT 2024-07-11T10:30:26 ***
+slurmstepd: error: *** STEP 5028208.0 ON cn-c014 CANCELLED AT 2024-07-11T10:30:26 ***

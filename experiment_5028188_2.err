@@ -1,0 +1,7 @@
+[=== Module anaconda/3 loaded ===]
+slurmstepd: error: *** JOB 5028199 ON cn-c040 CANCELLED AT 2024-07-11T10:13:32 ***
+slurmstepd: error: *** STEP 5028199.0 ON cn-c040 CANCELLED AT 2024-07-11T10:13:32 ***
+slurmstepd: error: container_p_join: open failed for /var/opt/slurm/localstorage/5028199/.ns: No such file or directory
+slurmstepd: error: container_g_join(5028199): No such file or directory
+slurmstepd: error: container_p_join: open failed for /var/opt/slurm/localstorage/5028199/.ns: No such file or directory
+slurmstepd: error: container_g_join(5028199): No such file or directory

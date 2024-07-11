@@ -50,13 +50,13 @@ class MinMaxScaler:
 def minmax_scaler(x, args):
     values_range = (-1, 1)
     min_value = 0 if args.trainset == 'era5-TCW' else 315.91873
-    max_value = 100 if args.trainset == 'era5-TCW' else 241.22385
+    max_value = 124 if args.trainset == 'era5-TCW' else 241.22385
     x = (x - min_value) / (max_value - min_value)
     return x * (values_range[1] - values_range[0]) + values_range[0]
 
 def inv_scaler(x):
     min_value = 0
-    max_value = 100
+    max_value = 124
     return x * (max_value - min_value) + min_value
 
 
@@ -98,8 +98,10 @@ def trainer(args, train_loader, valid_loader, model,
 
     paramsG = sum(x.numel() for x in generator.parameters() if x.requires_grad)
     paramsD = sum(x.numel() for x in discriminator.parameters() if x.requires_grad)
+
     print("Gen:", paramsG)
     print("Disc:", paramsD)
+    
     params = paramsG + paramsD
 
     # define constraint
