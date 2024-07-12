@@ -1,0 +1,13 @@
+[=== Module anaconda/3 loaded ===]
+Traceback (most recent call last):
+  File "/home/mila/c/christina.winkler/clim-var-ds-cnf/main.py", line 200, in <module>
+    main(args)
+  File "/home/mila/c/christina.winkler/clim-var-ds-cnf/main.py", line 82, in main
+    generator = srgan.Generator(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/mila/c/christina.winkler/clim-var-ds-cnf/models/architectures/srgan.py", line 83, in __init__
+    self.RRDB_trunk = make_layer(RRDB_block_f, nb=16)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+TypeError: make_layer() got an unexpected keyword argument 'nb'
+srun: error: cn-c011: task 0: Exited with exit code 1
+srun: Terminating StepId=5041037.0

@@ -71,17 +71,18 @@ class Generator(nn.Module):
     """
     RDDB Net type Generator.
     """
-    def __init__(self, in_nc, out_nc, nf, nb, s=2, gc=32):
+    def __init__(self, in_nc, out_nc, nf, nb=16, s=2, gc=32):
         super(Generator, self).__init__()
+
         RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
 
         self.s = s
         self.cond_prior = GaussianPrior(in_c=in_nc, cond_channels=128).cuda()
 
         self.conv_first = nn.Conv2d(1, nf, 3, 1, 1, bias=True)
-        self.RRDB_trunk = make_layer(RRDB_block_f, nb)
+        self.RRDB_trunk = make_layer(RRDB_block_f, n_layers=16)
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
-        
+
         #### upsampling
         self.upconv1 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
