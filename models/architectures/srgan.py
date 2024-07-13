@@ -111,50 +111,93 @@ class Generator(nn.Module):
 
         return out
 
-class Discriminator(nn.Module):
-    def __init__(self, in_channels) -> None:
+
+class Discriminator(torch.nn.Module):
+    def __init__(self, in_c, out_c, height, width):
         super(Discriminator, self).__init__()
-        self.net = nn.Sequential(
-            nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
-            nn.LeakyReLU(0.2),
 
-            nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(64),
-            nn.LeakyReLU(0.2),
+        self.leak_value = 0.2
+        self.bias = False
+        self.height = height
+        self.width = width
 
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.LeakyReLU(0.2),
+        self.f_dim = 32
 
-            nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(128),
-            nn.LeakyReLU(0.2),
+        self.layer1 = self.conv_layer(1, self.f_dim, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        self.layer2 = self.conv_layer(self.f_dim, 2*self.f_dim, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        # self.attn1 = SelfAttention(2*self.f_dim, height, width)
+        self.layer3 = self.conv_layer(2*self.f_dim, self.f_dim, kernel_size=3, stride=1, padding=1, bias=self.bias)
+        # self.attn2 = SelfAttention(self.f_dim, height, width)
+        self.layer4 = self.conv_layer(self.f_dim, 1, kernel_size=3, stride=1, padding=1, bias=self.bias)
 
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(256),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.LeakyReLU(0.2),
-
-            nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
-            nn.BatchNorm2d(512),
-            nn.LeakyReLU(0.2),
-
-            nn.AdaptiveAvgPool2d(1),
-            nn.Conv2d(512, 1024, kernel_size=1),
-            nn.LeakyReLU(0.2),
-            nn.Conv2d(1024, 1, kernel_size=1)
+        self.layer5 = torch.nn.Sequential(
+            torch.nn.Linear(height * width, 1),
+            torch.nn.Sigmoid()
         )
 
+    def conv_layer(self, input_dim, output_dim, kernel_size=4, stride=2, padding=1, bias=False):
+        layer = torch.nn.Sequential(
+            torch.nn.Conv2d(input_dim, output_dim, kernel_size=kernel_size, stride=stride, bias=bias, padding=padding),
+            torch.nn.BatchNorm2d(output_dim),
+            # torch.nn.LeakyReLU(self.leak_value, inplace=True)
+            torch.nn.ReLU(True)
+        )
+        return layer
+
     def forward(self, x):
-        batch_size = x.size(0)
-        return torch.sigmoid(self.net(x).view(batch_size))
+        batch_size = x.shape[0]
+        out = self.layer1(x)
+        out = self.layer2(out)
+        out = self.layer3(out)
+        out = self.layer4(out)
+        out = out.reshape(x.size(0),-1)
+        out = self.layer5(out)
+        return out.squeeze(1)
+
+# class Discriminator(nn.Module):
+#     def __init__(self, in_channels) -> None:
+#         super(Discriminator, self).__init__()
+#         self.net = nn.Sequential(
+#             nn.Conv2d(in_channels, 64, kernel_size=3, padding=1),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(64),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(64, 128, kernel_size=3, padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(128, 128, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(128),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(128, 256, kernel_size=3, padding=1),
+#             nn.BatchNorm2d(256),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(256, 256, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(256),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(256, 512, kernel_size=3, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.LeakyReLU(0.2),
+
+#             nn.Conv2d(512, 512, kernel_size=3, stride=2, padding=1),
+#             nn.BatchNorm2d(512),
+#             nn.LeakyReLU(0.2),
+
+#             nn.AdaptiveAvgPool2d(1),
+#             nn.Conv2d(512, 1024, kernel_size=1),
+#             nn.LeakyReLU(0.2),
+#             nn.Conv2d(1024, 1, kernel_size=1)
+#         )
+
+#     def forward(self, x):
+#         batch_size = x.size(0)
+#         return torch.sigmoid(self.net(x).view(batch_size))
 
 class SelfAttention(nn.Module):
     def __init__(self, channels, height, width):
