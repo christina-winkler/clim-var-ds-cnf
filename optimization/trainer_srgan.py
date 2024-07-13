@@ -128,7 +128,7 @@ def trainer(args, train_loader, valid_loader, model,
         args.parallel = True
 
     mse_loss = nn.MSELoss()
-    bce_loss = nn.BCELoss()
+    bce_loss = nn.MSELoss()
     for epoch in range(args.epochs):
         for batch_idx, item in enumerate(train_loader):
 

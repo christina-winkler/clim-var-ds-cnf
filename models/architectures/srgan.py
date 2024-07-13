@@ -94,7 +94,7 @@ class Generator(nn.Module):
         self.HRconv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.conv_last = nn.Conv2d(nf, out_nc, 3, 1, 1, bias=True)
         
-        self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
+        self.relu = nn.ReLU(inplace=True)
 
     def forward(self, x):
 
@@ -108,9 +108,9 @@ class Generator(nn.Module):
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 
-        fea = self.lrelu(self.upconv1(F.interpolate(fea, scale_factor=self.s, mode='bicubic')))
+        fea = self.relu(self.upconv1(F.interpolate(fea, scale_factor=self.s, mode='bicubic')))
         # fea = self.lrelu(self.upconv2(F.interpolate(fea, scale_factor=2, mode='nearest')))
-        out = self.conv_last(self.lrelu(self.HRconv(fea)))
+        out = self.conv_last(self.relu(self.HRconv(fea)))
 
         return out
 
