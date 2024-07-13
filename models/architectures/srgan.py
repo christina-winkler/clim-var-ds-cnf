@@ -37,7 +37,7 @@ class ResidualDenseBlock_5C(nn.Module):
         # gc: growth channel, i.e. intermediate channels
         self.conv1 = nn.Conv2d(nf, gc, 3, 1, 1, bias=bias)
         self.conv2 = nn.Conv2d(nf + gc, gc, 3, 1, 1, bias=bias)
-        self.attn1 = SelfAttention(gc, height//2, width//2)
+        # self.attn1 = SelfAttention(gc, height//2, width//2)
         self.conv3 = nn.Conv2d(nf + 2 * gc, gc, 3, 1, 1, bias=bias)
         self.conv4 = nn.Conv2d(nf + 3 * gc, gc, 3, 1, 1, bias=bias)
         # self.attn2 = SelfAttention(gc, height//2, width//2)
@@ -50,8 +50,8 @@ class ResidualDenseBlock_5C(nn.Module):
     def forward(self, x):
         x1 = self.lrelu(self.conv1(x))
         x2 = self.lrelu(self.conv2(torch.cat((x, x1), 1)))
-        x2a = self.attn1(x2).squeeze(2)
-        x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2a), 1)))
+        # x2a = self.attn1(x2).squeeze(2)
+        x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
         x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
         # x4a = self.attn2(x4).squeeze(2)
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
@@ -84,7 +84,7 @@ class Generator(nn.Module):
         self.s = s
         self.cond_prior = GaussianPrior(in_c=in_nc, cond_channels=128).cuda()
 
-        self.conv_first = nn.Conv2d(1, nf, 3, 1, 1, bias=True)
+        self.conv_first = nn.Conv2d(2, nf, 3, 1, 1, bias=True)
         self.RRDB_trunk = make_layer(RRDB_block_f, n_layers=nb)
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
 
@@ -100,8 +100,11 @@ class Generator(nn.Module):
 
         # sample z from conditional base density
         z = self.cond_prior(x)
+
+        # add residual connection
+        za = torch.cat((x,z),1)
         
-        fea = self.conv_first(z)
+        fea = self.conv_first(za)
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk
 

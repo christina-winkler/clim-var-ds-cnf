@@ -10,3 +10,5 @@ utils/__pycache__
 optimization/__pycache__
 runs/
 experiments/
+*.err
+*.out
