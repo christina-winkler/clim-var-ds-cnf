@@ -2,6 +2,7 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import mutil
 import pdb
 # taken from: https://github.com/xinntao/ESRGAN/blob/master/RRDBNet_arch.py
 
@@ -31,13 +32,15 @@ class GaussianPrior(nn.Module):
         return z
 
 class ResidualDenseBlock_5C(nn.Module):
-    def __init__(self, nf=64, gc=32, bias=True):
+    def __init__(self, nf=64, gc=32, height=None, width=None, bias=True):
         super(ResidualDenseBlock_5C, self).__init__()
         # gc: growth channel, i.e. intermediate channels
         self.conv1 = nn.Conv2d(nf, gc, 3, 1, 1, bias=bias)
         self.conv2 = nn.Conv2d(nf + gc, gc, 3, 1, 1, bias=bias)
+        self.attn1 = SelfAttention(gc, height//2, width//2)
         self.conv3 = nn.Conv2d(nf + 2 * gc, gc, 3, 1, 1, bias=bias)
         self.conv4 = nn.Conv2d(nf + 3 * gc, gc, 3, 1, 1, bias=bias)
+        # self.attn2 = SelfAttention(gc, height//2, width//2)
         self.conv5 = nn.Conv2d(nf + 4 * gc, nf, 3, 1, 1, bias=bias)
         self.lrelu = nn.LeakyReLU(negative_slope=0.2, inplace=True)
 
@@ -47,19 +50,21 @@ class ResidualDenseBlock_5C(nn.Module):
     def forward(self, x):
         x1 = self.lrelu(self.conv1(x))
         x2 = self.lrelu(self.conv2(torch.cat((x, x1), 1)))
-        x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2), 1)))
+        x2a = self.attn1(x2).squeeze(2)
+        x3 = self.lrelu(self.conv3(torch.cat((x, x1, x2a), 1)))
         x4 = self.lrelu(self.conv4(torch.cat((x, x1, x2, x3), 1)))
+        # x4a = self.attn2(x4).squeeze(2)
         x5 = self.conv5(torch.cat((x, x1, x2, x3, x4), 1))
         return x5 * 0.2 + x
 
 class RRDB(nn.Module):
     '''Residual in Residual Dense Block'''
 
-    def __init__(self, nf, gc=32):
+    def __init__(self, nf, height=None, width=None, gc=32):
         super(RRDB, self).__init__()
-        self.RDB1 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB2 = ResidualDenseBlock_5C(nf, gc)
-        self.RDB3 = ResidualDenseBlock_5C(nf, gc)
+        self.RDB1 = ResidualDenseBlock_5C(nf, gc, height, width)
+        self.RDB2 = ResidualDenseBlock_5C(nf, gc, height, width)
+        self.RDB3 = ResidualDenseBlock_5C(nf, gc, height, width)
 
     def forward(self, x):
         out = self.RDB1(x)
@@ -71,16 +76,16 @@ class Generator(nn.Module):
     """
     RDDB Net type Generator.
     """
-    def __init__(self, in_nc, out_nc, nf, nb=16, s=2, gc=32):
+    def __init__(self, in_nc, out_nc, height, width, nf, nb=16, s=2, gc=32):
         super(Generator, self).__init__()
 
-        RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc)
+        RRDB_block_f = functools.partial(RRDB, nf=nf, gc=gc, height=height, width=width)
 
         self.s = s
         self.cond_prior = GaussianPrior(in_c=in_nc, cond_channels=128).cuda()
 
         self.conv_first = nn.Conv2d(1, nf, 3, 1, 1, bias=True)
-        self.RRDB_trunk = make_layer(RRDB_block_f, n_layers=16)
+        self.RRDB_trunk = make_layer(RRDB_block_f, n_layers=nb)
         self.trunk_conv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
 
         #### upsampling
@@ -150,3 +155,27 @@ class Discriminator(nn.Module):
     def forward(self, x):
         batch_size = x.size(0)
         return torch.sigmoid(self.net(x).view(batch_size))
+
+class SelfAttention(nn.Module):
+    def __init__(self, channels, height, width):
+        super(SelfAttention, self).__init__()
+        self.channels = channels
+        self.height = height
+        self.width = width
+        self.mha = nn.MultiheadAttention(channels, 4, batch_first=True)
+        self.ln = nn.LayerNorm([channels])
+        self.ff_self = nn.Sequential(
+            nn.LayerNorm([channels]),
+            nn.Linear(channels, channels),
+            nn.GELU(),
+            nn.Linear(channels, channels),
+        )
+
+    def forward(self, x):
+        bsz = x.shape[0]
+        x = x.view(bsz, self.channels, self.height * self.width).swapaxes(1, 2)
+        x_ln = self.ln(x)
+        attention_value, _ = self.mha(x_ln, x_ln, x_ln)
+        attention_value = attention_value + x
+        attention_value = self.ff_self(attention_value) + attention_value
+        return attention_value.swapaxes(2, 1).view(-1, self.channels, self.height, self.width).unsqueeze(2)

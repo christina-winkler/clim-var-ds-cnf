@@ -17,7 +17,7 @@ torch.backends.cudnn.benchmark = False
 
 
 class LrNet(nn.Module):
-    def __init__(self, in_c, cond_channels, s, input_shape, nb, constraint, gc=32):
+    def __init__(self, in_c, cond_channels, s, input_shape, nb, gc=32):
         """
         Args:
             in_c (int): Number of input channels.

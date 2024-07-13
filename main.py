@@ -79,7 +79,7 @@ def main(args):
 
     if args.modeltype == "srgan":
 
-        generator = srgan.Generator(in_channels, out_nc=1, nf=128, s=args.s, nb=5)
+        generator = srgan.Generator(in_channels, out_nc=1, height=height, width=width, nf=128, s=args.s, nb=1)
         discriminator = srgan.Discriminator(in_channels)
         model = (generator, discriminator)
 
