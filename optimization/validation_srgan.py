@@ -69,14 +69,14 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
             os.makedirs(viz_dir, exist_ok=True)
 
             # Visualize low resolution GT
-            grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
-            plt.figure()
-            plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
-            plt.axis('off')
-            plt.title("Low-Res GT (train)")
-            # plt.show()
-            plt.savefig(viz_dir + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
-            plt.close()
+            # grid_low_res = torchvision.utils.make_grid(x[0:9, :, :, :].cpu(), nrow=3)
+            # plt.figure()
+            # plt.imshow(grid_low_res.permute(1, 2, 0)[:,:,0], cmap=cmap)
+            # plt.axis('off')
+            # plt.title("Low-Res GT (train)")
+            # # plt.show()
+            # plt.savefig(viz_dir + '/low_res_gt{}.png'.format(batch_idx), dpi=300, bbox_inches='tight')
+            # plt.close()
 
             # Visualize High-Res GT
             grid_high_res_gt = torchvision.utils.make_grid(y[0:9, :, :, :].cpu(), nrow=3)
