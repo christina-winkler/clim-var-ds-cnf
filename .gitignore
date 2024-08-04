@@ -12,3 +12,10 @@ runs/
 experiments/
 *.err
 *.out
+*.precipitation.zip
+data/download/*
+data/precipitation/
+data/wc2*
+data/noresm/
+radial*
+data/noresm*

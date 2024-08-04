@@ -2,7 +2,6 @@ import functools
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import mutil
 import pdb
 # taken from: https://github.com/xinntao/ESRGAN/blob/master/RRDBNet_arch.py
 
@@ -17,7 +16,7 @@ class GaussianPrior(nn.Module):
         super(GaussianPrior, self).__init__()
 
         self.cond_channels = cond_channels
-        self.conv = nn.Conv2d(in_c, 2, kernel_size=3, stride=1, padding=1) 
+        self.conv = nn.Conv2d(in_c, 2, kernel_size=3, stride=1, padding=1)
 
     def final_prior(self, feat_map):
         h = self.conv(feat_map)
@@ -93,17 +92,17 @@ class Generator(nn.Module):
         self.upconv2 = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.HRconv = nn.Conv2d(nf, nf, 3, 1, 1, bias=True)
         self.conv_last = nn.Conv2d(nf, out_nc, 3, 1, 1, bias=True)
-        
+
         self.relu = nn.ReLU(inplace=True)
 
-    def forward(self, x):
+    def forward(self, x, eps=1.0):
 
         # sample z from conditional base density
-        z = self.cond_prior(x)
+        z = self.cond_prior(x, eps)
 
         # add residual connection
         za = torch.cat((x,z),1)
-        
+
         fea = self.conv_first(za)
         trunk = self.trunk_conv(self.RRDB_trunk(fea))
         fea = fea + trunk

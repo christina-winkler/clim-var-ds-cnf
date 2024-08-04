@@ -86,7 +86,7 @@ class NormFlowNet(nn.Module):
         self.testmode = testmode
         self.output_shapes = []
         self.layers = nn.ModuleList()
-        self.lrNet = LrNet(in_c=1, cond_channels=cond_channels, s=s, constraint=constraint,
+        self.lrNet = LrNet(in_c=1, cond_channels=cond_channels, s=s, 
                            input_shape=(C, W // s, H // s), nb=nb)
 
         self.downsample_convs = nn.ModuleList()
