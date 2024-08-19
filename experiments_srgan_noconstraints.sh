@@ -16,9 +16,9 @@ conda activate sr
 
 # Array of experiments with GPU requests
 EXPERIMENTS=(
-    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 2 --log_interval 200 --nb 16 --constraint None"
-    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 4 --log_interval 200 --nb 16 --constraint None"
-    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 8 --log_interval 200 --nb 16 --constraint None"
+    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 2 --log_interval 200 --nb 16 --constraint None"
+    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 4 --log_interval 200 --nb 16 --constraint None"
+    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 8 --log_interval 200 --nb 16 --constraint None"
     "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 16 --log_interval 200 --nb 16 --constraint None"                                    
 )
 
