@@ -190,7 +190,7 @@ if __name__ == "__main__":
                         help="Type of noise schedule defining variance of noise that is added to the data in the diffusion process.")
 
     # data
-    parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data",
+    parser.add_argument("--datadir", type=str, default="/home/mila/c/christina.winkler/scratch/data/",
                         help="Dataset to train the model on.")
     parser.add_argument("--trainset", type=str, default="era5-TCW",
                         help="Dataset to train the model on.")

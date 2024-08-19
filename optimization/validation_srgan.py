@@ -39,7 +39,7 @@ def validate(discriminator, generator, val_loader, metric_dict, exp_name, logste
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+    cmap = 'viridis' #if args.trainset == 'era5-TCW' else 'inferno'
 
     discriminator.eval()
     generator.eval()

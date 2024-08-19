@@ -63,7 +63,7 @@ def inv_scaler(x):
 def trainer(args, train_loader, valid_loader, model,
             device='cpu', constraint='None'):
 
-    cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
+    cmap = 'viridis' #if args.trainset == 'era5-TCW' else 'inferno'
     config_dict = vars(args)
 
     # wandb.init(project="arflow", config=config_dict)
