@@ -7,6 +7,7 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:1
 #SBATCH --array=0-19  # Adjust this based on the number of experiments
+#SBATCH --time=7-00:00:00
 
 # Load necessary modules
 module load anaconda/3
@@ -16,9 +17,9 @@ conda activate sr
 
 # Array of experiments with GPU requests
 EXPERIMENTS=(
-    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 2 --log_interval 200 --nb 16 --constraint None"
-    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 4 --log_interval 200 --nb 16 --constraint None"
-    # "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 8 --log_interval 200 --nb 16 --constraint None"
+    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 2 --log_interval 200 --nb 16 --constraint None"
+    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 4 --log_interval 200 --nb 16 --constraint None"
+    "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 8 --log_interval 200 --nb 16 --constraint None"
     "srun --gres=gpu:1 python main.py --trainset era5-TCW --train --modeltype srgan --s 16 --log_interval 200 --nb 16 --constraint None"                                    
 )
 

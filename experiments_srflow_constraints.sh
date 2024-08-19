@@ -7,6 +7,7 @@
 #SBATCH --mem=16G
 #SBATCH --gres=gpu:1
 #SBATCH --array=0-19  # Adjust this based on the number of experiments
+#SBATCH --time=7-00:00:00
 
 # Load necessary modules
 module load anaconda/3
