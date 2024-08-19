@@ -19,6 +19,6 @@ data/wc2*
 data/noresm/
 radial*
 data/processed/
-data-analysis/*
+data-analysis/
 data/noresm.zip
 .ipynb_checkpoints/*

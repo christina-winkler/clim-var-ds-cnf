@@ -17,6 +17,7 @@ import xarray as xr
 
 from data.era5_temp_dataset import ERA5T2MData
 from data.era5_watercontent_dset import ERA5WTCData
+from data.noresm import NoresmData
 
 random.seed(0)
 torch.manual_seed(0)
@@ -35,6 +36,24 @@ def load_era5_TCW(args):
     train_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/train', s=args.s)
     val_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/val', s=args.s)
     test_data = ERA5WTCData(data_path=args.datadir + '/era5_tcw/test', s=args.s)
+
+    train_loader = data_utils.DataLoader(train_data, args.bsz, shuffle=True,
+                                         drop_last=True)
+    val_loader = data_utils.DataLoader(val_data, args.bsz, shuffle=True,
+                                       drop_last=True)
+    test_loader = data_utils.DataLoader(test_data, args.bsz, shuffle=False,
+                                        drop_last=False)
+
+    return train_loader, val_loader, test_loader, args
+
+
+def load_noresm(args):
+
+    print("Loading NORESM ...")
+
+    train_data = NoresmData(data_path=args.datadir + 'noresm/train', s=args.s)
+    val_data = NoresmData(data_path=args.datadir + 'noresm/valid', s=args.s)
+    test_data = NoresmData(data_path=args.datadir + 'noresm/test', s=args.s)
 
     train_loader = data_utils.DataLoader(train_data, args.bsz, shuffle=True,
                                          drop_last=True)
@@ -81,6 +100,9 @@ def load_data(args):
 
     elif args.trainset == "era5-TCW":
         return load_era5_TCW(args)
+
+    elif args.trainset == "noresm":
+        return load_noresm(args)
 
     else:
         raise ValueError("Dataset not available. Check for typos!")
