@@ -169,11 +169,11 @@ def trainer(args, train_loader, valid_loader, model,
                     model.eval()
 
                     # testing reconstruction - should be exact same as x_for
-                    reconstructions, _, _ = model.forward(z=z.cuda(), x_past=x_past.cuda(), state=state,
-                                                          use_stored=True, reverse=True)
+                    reconstructions, _, _ = model.forward(z=z.cuda(), x_past=x.cuda(), state=state,
+                                                            use_stored=True, reverse=True)
 
-                    squared_recon_error = (reconstructions-x_for).mean()**2
-                    print("Reconstruction Error:", (reconstructions-x_for).mean())
+                    squared_recon_error = (reconstructions-y).mean()**2
+                    print("Reconstruction Error:", (reconstructions-y).mean())
                     # wandb.log({"Squared Reconstruction Error" : squared_recon_error})
 
                     grid_reconstructions = torchvision.utils.make_grid(reconstructions[0:9, :, :, :].squeeze(1).cpu(), normalize=True, nrow=3)
@@ -189,10 +189,10 @@ def trainer(args, train_loader, valid_loader, model,
                     # plt.show()
 
                     # visualize past frames the prediction is based on (context)
-                    grid_past = torchvision.utils.make_grid(x_past[0:9, -1, :, :].cpu(), normalize=True, nrow=3)
+                    grid_past = torchvision.utils.make_grid(x[0:9, -1, :, :].cpu(), normalize=True, nrow=3)
                     array_imgs_past = np.array(grid_past.permute(2,1,0)[:,:,0].contiguous().unsqueeze(2))
                     cmap_past = np.apply_along_axis(cm.inferno, 2, array_imgs_past)
-                    past_imgs = wandb.Image(cmap_past, caption="Frame at t-1")
+                    past_imgs = wandb.Image(cmap_past, caption="Low-Res")
                     # wandb.log({"Context Frame at t-1 (train) {}".format(step) : past_imgs})
 
                     plt.figure()
@@ -202,10 +202,10 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.savefig(viz_dir + '/frame_at_t-1_{}.png'.format(step), dpi=300)
 
                     # visualize future frame of the correct prediction
-                    grid_future = torchvision.utils.make_grid(x_for[0:9, :, :, :].squeeze(1).cpu(), normalize=True, nrow=3)
+                    grid_future = torchvision.utils.make_grid(y[0:9, :, :, :].squeeze(1).cpu(), normalize=True, nrow=3)
                     array_imgs_future = np.array(grid_future.permute(2,1,0)[:,:,0].unsqueeze(2))
                     cmap_future = np.apply_along_axis(cm.inferno, 2, array_imgs_future)
-                    future_imgs = wandb.Image(cmap_future, caption="Frame at t")
+                    future_imgs = wandb.Image(cmap_future, caption="High-Res")
                     # wandb.log({"Frame at t (train) {}".format(step) : future_imgs})
 
                     plt.figure()
@@ -225,13 +225,13 @@ def trainer(args, train_loader, valid_loader, model,
                     # plt.show()
                     # plt.savefig(viz_dir + '/log_pz_{}.png'.format(step), dpi=300)
 
-                     # predicting a new sample based on context window
+                    # predicting a new sample based on context window
                     print("Predicting ...")
-                    predictions, _, _ = model._predict(x_past.cuda(), state) # TODO: sample longer trajectories
+                    predictions, _, _ = model._predict(x.cuda(), state)
                     grid_pred = torchvision.utils.make_grid(predictions[0:9, :, :, :].squeeze(1).cpu(),normalize=True, nrow=3)
                     array_imgs_pred = np.array(grid_pred.permute(2,1,0)[:,:,0].unsqueeze(2))
                     cmap_pred = np.apply_along_axis(cm.inferno, 2, array_imgs_pred)
-                    future_pred = wandb.Image(cmap_pred, caption="Frame at t")
+                    future_pred = wandb.Image(cmap_pred, caption="Prediction")
                     # wandb.log({"Predicted frame at t (train) {}".format(step) : future_pred})
 
                     # visualize predictions
@@ -239,7 +239,7 @@ def trainer(args, train_loader, valid_loader, model,
                     plt.figure()
                     plt.imshow(grid_samples.permute(1, 2, 0)[:,:,0].contiguous(), cmap=color)
                     plt.axis('off')
-                    plt.title("Prediction at t")
+                    plt.title("Prediction")
                     plt.savefig(viz_dir + '/samples_{}.png'.format(step), dpi=300)
 
 

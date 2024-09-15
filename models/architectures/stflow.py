@@ -168,7 +168,10 @@ class NormFlowNet(nn.Module):
 
                         # pdb.set_trace()
                         z_shaped = torch.zeros(bsz, C, 1, height*self.s, width*self.s) #self.output_shapes[i]).to(self.device)
-                        h_shaped = torch.zeros(bsz, C*(i+1), 1, height*self.s, width*self.s) #self.output_shapes[i]).to(self.device)
+                        if i <= 1:
+                            h_shaped = torch.zeros(bsz, C*(i+1), 1, height*self.s, width*self.s) #self.output_shapes[i]).to(self.device)
+                        else:
+                            h_shaped = torch.zeros(bsz, C*4, 1, height*self.s, width*self.s)
 
                         # squeeze each time-frame separately
                         for s in range(self.lag_len):
@@ -198,11 +201,11 @@ class NormFlowNet(nn.Module):
                 # pdb.set_trace()
                 bsz, c, t, height, w = self.output_shapes[i]
                 # bsz = 1 if self.testmode else bsz
-                h_temp = torch.zeros((bsz,c,t,height,w)).to(self.device).cuda()
-
+                h_temp = torch.zeros((bsz,c,t,height*self.s,w*self.s)).to(self.device).cuda()
+            
                 for l in range(self.lag_len):
                     h_temp[:,:,l,:,:] = self.extra_squeezer(h[:,:,l,:,:])
-                h = h_temp.clone()
+                h = h_temp.clone()    
 
             for i in reversed(range(self.L)):
                 for layer in reversed(self.level_modules[i]):
@@ -227,14 +230,13 @@ class NormFlowNet(nn.Module):
                         z = z.unsqueeze(2)
                         bsz, c, t, height, w = self.output_shapes[i-1]
                         # bsz = 1 if self.testmode else bsz
-                        h_temp = torch.zeros((bsz,c,t,height,w)).to(self.device)
+                        h_temp = torch.zeros((bsz,c,t,height*self.s,w*self.s)).to(self.device)
 
                         for l in range(self.lag_len):
                             h_temp[:,:,l,:,:] = self.extra_squeezer(h[:,:,l,:,:], reverse=True)
                         h = h_temp.clone()
 
         return z, state, logdet, logpz
-
 
 class FlowModel(nn.Module):
     def __init__(self, input_shape, filter_size, L, K, bsz, lag_len,

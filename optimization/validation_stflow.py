@@ -30,12 +30,15 @@ def validate(model, val_loader, exp_name, logstep, args):
     with torch.no_grad():
         for batch_idx, item in enumerate(val_loader):
 
-            x = item[0].to(args.device)
+            # retrieve low and high-res
+            x, y = item[1].to(args.device), item[2].to(args.device)
 
-            # split time series into lags and prediction window
-            x_past, x_for = x[:,:, :2,...], x[:,:,2:,...]
+            # adjust shape of x to match y 
+            x = torch.nn.functional.interpolate(x, size=y.shape[-2:], mode='bicubic', align_corners=False)
 
-            z, state, nll, _ = model.forward(x=x_for, x_past=x_past, state=state)
+            x, y = x.unsqueeze(1), y.unsqueeze(1)
+
+            z, state, nll, _ = model.forward(x=y, x_past=x, state=state)
 
             # Generative loss
             nll_list.append(nll.mean().detach().cpu().numpy())
@@ -43,59 +46,59 @@ def validate(model, val_loader, exp_name, logstep, args):
             if batch_idx == 100:
                 break
 
-            # ---------------------- Evaluate Predictions---------------------- #
+        # ---------------------- Evaluate Predictions---------------------- #
 
         # evalutae for different temperatures (just for last batch, perhaps change l8er)
-        mu0, *_ = model._predict(x_past, state, eps=0)
-        mu05, *_ = model._predict(x_past, state, eps=0.5)
-        mu08, *_ = model._predict(x_past, state, eps=0.8)
-        mu1, *_ = model._predict(x_past, state, eps=1)
+        mu0, *_ = model._predict(x, state, eps=0)
+        mu05, *_ = model._predict(x, state, eps=0.5)
+        mu08, *_ = model._predict(x, state, eps=0.8)
+        mu1, *_ = model._predict(x, state, eps=1)
 
         savedir = "{}/snapshots/validationset_{}/".format(exp_name, args.trainset)
 
         os.makedirs(savedir, exist_ok=True)
 
-        grid_ground_truth = torchvision.utils.make_grid(x_for[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
+        grid_ground_truth = torchvision.utils.make_grid(y[0:9, :, :, :].squeeze(1).cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_ground_truth.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_ground_truth.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Frame at t (valid)")
-        plt.savefig(savedir + "x_t_step_{}_valid.png".format(logstep), dpi=300)
+        plt.title("High-Res GT (valid)")
+        plt.savefig(savedir + "y_step_{}_valid.png".format(logstep), dpi=300)
 
         # visualize past frames the prediction is based on (context)
-        grid_past = torchvision.utils.make_grid(x_past[0:9, -1, :, :].cpu(), nrow=3)
+        grid_past = torchvision.utils.make_grid(x[0:9, -1, :, :].cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_past.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_past.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Frame at t (valid)")
-        plt.savefig(savedir + "_x_t_step_{}_valid.png".format(logstep), dpi=300)
+        plt.title("Low-Res (valid)")
+        plt.savefig(savedir + "x_step_{}_valid.png".format(logstep), dpi=300)
 
         grid_mu0 = torchvision.utils.make_grid(mu0[0:9,:,:,:].squeeze(1).cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Prediction at t (valid), mu=0")
+        plt.title("Prediction (valid), mu=0")
         plt.savefig(savedir + "mu_0_logstep_{}_valid.png".format(logstep), dpi=300)
 
         grid_mu05 = torchvision.utils.make_grid(mu05[0:9,:,:,:].squeeze(1).cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu0.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu05.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Prediction at t (valid), mu=0.5")
+        plt.title("Prediction (valid), mu=0.5")
         plt.savefig(savedir + "mu_0.5_logstep_{}_valid.png".format(logstep), dpi=300)
 
         grid_mu08 = torchvision.utils.make_grid(mu08[0:9,:,:,:].squeeze(1).cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu08.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Prediction at t (valid), mu=0.8")
+        plt.title("Prediction (valid), mu=0.8")
         plt.savefig(savedir + "mu_0.8_logstep_{}_valid.png".format(logstep), dpi=300)
 
         grid_mu1 = torchvision.utils.make_grid(mu1[0:9,:,:,:].squeeze(1).cpu(), nrow=3)
         plt.figure()
-        plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='inferno')
+        plt.imshow(grid_mu1.permute(1, 2, 0)[:,:,0].contiguous(), cmap='viridis')
         plt.axis('off')
-        plt.title("Prediction at t (valid), mu=1.0")
+        plt.title("Prediction (valid), mu=1.0")
         plt.savefig(savedir + "mu_1_logstep_{}_valid.png".format(logstep), dpi=300)
 
     print("Average Validation Neg. Log Probability Mass:", np.mean(nll_list))

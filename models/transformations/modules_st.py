@@ -449,9 +449,7 @@ class GaussianPrior(nn.Module):
 
     def final_prior(self, h):
 
-        # pdb.set_trace()
-
-        h = self.conv1(h)
+        h = self.conv1(h.cuda())
         h = self.conv2(h)
 
         # decrease time-channel-axis to 1 - depending on lead length but leaving 1 for now
