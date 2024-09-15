@@ -277,7 +277,7 @@ class conv3d_zeros(nn.Conv3d):
 
 class Net(nn.Module):
     def __init__(self, level, s, in_channels, input_shape, cond_channels, lag_len,
-                 noscale, noscaletest, intermediate_size=512):
+                    noscale, noscaletest, intermediate_size=512):
         super().__init__()
 
         self.squeezer = Squeeze()
@@ -290,21 +290,19 @@ class Net(nn.Module):
 
         self.upsample_conv = nn.Conv3d(in_channels//2, 2**(2*(level+1))*c, kernel_size=1)
         self.change_time_channel = nn.Conv3d(lag_len + 1, 1,
-                                             (1,1,1), stride=(1,1,1),padding=(0,0,0))  # nn.Conv3d(3, 1, kernel_size=1) # conv = nn.Conv3d(4, 1, (3,3,3), stride=(1,1,1),padding=(0,0,0))
+                                            (1,1,1), stride=(1,1,1),padding=(0,0,0))  # nn.Conv3d(3, 1, kernel_size=1) # conv = nn.Conv3d(4, 1, (3,3,3), stride=(1,1,1),padding=(0,0,0))
 
         # pdb.set_trace()
-        self.Net = nn.Sequential(
-                   nn.Conv3d(2**(2*(level+1))*c, intermediate_size,
-                             kernel_size=3, padding=1),
-                   nn.ReLU(),
-                   nn.Conv3d(intermediate_size, intermediate_size,
-                             kernel_size=3, padding=1),
-                   nn.ReLU(),
-                   nn.Conv3d(intermediate_size, in_channels, #  2*(2**(2*(level+1))//2 *c)
-                             kernel_size=1),
-                   nn.ReLU())
+        self.Net = nn.Sequential(nn.Conv3d(2**(2*(level+1))*c, intermediate_size,
+                                kernel_size=3, padding=1),
+                                nn.ReLU(),
+                                nn.Conv3d(intermediate_size, intermediate_size,
+                                kernel_size=3, padding=1),
+                                nn.ReLU(),
+                                nn.Conv3d(intermediate_size, in_channels, #  2*(2**(2*(level+1))//2 *c)
+                                kernel_size=1),
+                                nn.ReLU())
 
-        # pdb.set_trace()
         self.Net[0].bias.data.zero_()
         self.Net[2].weight.data.normal_(0, 0.05)
         self.Net[2].bias.data.zero_()
@@ -315,20 +313,19 @@ class Net(nn.Module):
         h = torch.cat((input, h), 2)
 
         h = h.permute(0,2,1,3,4)
-        h = self.change_time_channel(h)
+        h = self.change_time_channel(h.cuda())
         h = h.permute(0,2,1,3,4)
-
         out = self.Net(h)
-        return out
 
+        return out
 
 class ConditionalCoupling(nn.Module):
 
     def __init__(self, level, s, in_channels, input_shape, cond_channels, lag_len,
-                 filter_size, noscale, noscaletest):
+                    filter_size, noscale, noscaletest):
         super().__init__()
         self.Net = Net(level, s, in_channels, input_shape, cond_channels, lag_len,
-                       noscale, filter_size)
+                        noscale, filter_size)
         self.noscale = noscale
         self.noscaletest = noscaletest
         self.scaling_factor = nn.Parameter(torch.zeros(in_channels//2))
@@ -439,7 +436,7 @@ class GaussianPrior(nn.Module):
     def split2d_prior(self, z, h):
 
         # decrease time-channel-axis to 1
-        h = self.change_time_channel(h)
+        h = self.change_time_channel(h.cuda())
 
         x = torch.cat((z, h), 1)
         h = self.conv(x)

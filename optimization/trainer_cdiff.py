@@ -53,7 +53,7 @@ def trainer(args, train_loader, valid_loader, model, opt, device='cpu'):
     cmap = 'viridis' if args.trainset == 'era5-TCW' else 'inferno'
     config_dict = vars(args)
 
-    args.experiment_dir = os.path.join('runs',
+    args.experiment_dir = os.path.join('/home/mila/c/christina.winkler/scratch/runs/',
                                         args.modeltype + '_' + args.trainset + '_' + args.constraint + '_' + datetime.now().strftime("_%Y_%m_%d_%H_%M_%S") +'_'+ str(args.s)+'x')
 
     os.makedirs(args.experiment_dir, exist_ok=True)

@@ -11,10 +11,10 @@ import os
 from data import dataloading
 
 # Models
-from models.architectures import srflow, srgan, cdiffusion
+from models.architectures import srflow, srgan, cdiffusion, stflow
 
 # Optimization
-from optimization import trainer_srflow, trainer_srgan, trainer_cdiff
+from optimization import trainer_srflow, trainer_srgan, trainer_cdiff, trainer_stflow
 
 from utils import *
 
@@ -30,7 +30,12 @@ sys.path.append("../../")
 
 
 def main(args):
+    random.seed(0)
+    torch.manual_seed(0)
+    np.random.seed(0)
 
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False
     print('Num of avail GPUs:', torch.cuda.device_count())
 
     # Initialize device on which to run the model
@@ -42,15 +47,13 @@ def main(args):
     else:
         args.device = "cpu"
 
-    # args.device = 'cpu'
     print("Device", args.device)
-    # args.device = "cpu"
 
     # Build name of current model
     if args.modelname is None:
         args.modelname = "{}_{}_bsz{}_K{}_L{}_lr{:.4f}_s{}".format(args.modeltype, args.trainset,
-                                                                   args.bsz, args.K, args.L,
-                                                                   args.lr, args.s)
+                                                                    args.bsz, args.K, args.L,
+                                                                    args.lr, args.s)
 
     if args.train:
         # load data
@@ -62,9 +65,8 @@ def main(args):
 
     if args.modeltype == "srflow":
 
-        print("Hard Constraint:", args.constraint)
         model = srflow.SRFlow((in_channels, height, width), args.filter_size, args.L, args.K,
-                               args.bsz, args.s, args.constraint, args.nb, args.condch, args.noscale, args.noscaletest)
+                                args.bsz, args.s, args.constraint, args.nb, args.condch, args.noscale, args.noscaletest)
         if args.resume:
             modelname = 'model_epoch_1_step_53000.tar'
             modelpath = "/home/christina/Documents/clim-var-ds-cnf/runs/srflow_era5-TCW_2023_10_02_18_59_012x/model_checkpoints/{}".format(modelname)
@@ -72,12 +74,23 @@ def main(args):
             model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_srflow.trainer(args=args, train_loader=train_loader,
-                               valid_loader=valid_loader,
-                               model=model,
-                               device=args.device)
+                                valid_loader=valid_loader,
+                                model=model,
+                                device=args.device)
+        
+    elif args.modeltype == "stflow":
+        
+        st_model = stflow.FlowModel((in_channels, height//args.s, width//args.s),
+                                        args.filter_size, args.L, args.K, args.bsz,
+                                        1, args.s, args.nb, args.device,
+                                        args.condch, args.noscale, args.noscaletest).to(args.device)
 
-
-    if args.modeltype == "srgan":
+        trainer_stflow.trainer(args=args, train_loader=train_loader,
+                                valid_loader=valid_loader,
+                                model=st_model,
+                                device=args.device)
+    
+    elif args.modeltype == "srgan":
 
         generator = srgan.Generator(in_channels, out_nc=1, height=height, width=width, nf=128, s=args.s, nb=5)
         discriminator = srgan.Discriminator(in_channels, out_c=1, height=height, width=width)
@@ -90,9 +103,9 @@ def main(args):
             model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_srgan.trainer(args=args, train_loader=train_loader,
-                              valid_loader=valid_loader,
-                              model=model,
-                              device=args.device)
+                                valid_loader=valid_loader,
+                                model=model,
+                                device=args.device)
 
         if args.resume:
             modelname = 'model_epoch_4_step_96500.tar'
@@ -101,9 +114,9 @@ def main(args):
             model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_stflow.trainer(args=args, train_loader=train_loader,
-                               valid_loader=valid_loader,
-                               model=model,
-                               device=args.device)
+                                valid_loader=valid_loader,
+                                model=model,
+                                device=args.device)
 
     if args.modeltype == "cdiff":
 
@@ -118,13 +131,13 @@ def main(args):
             model.load_state_dict(ckpt['model_state_dict'])
 
         trainer_cdiff.trainer(args=args, train_loader=train_loader,
-                              valid_loader=valid_loader,
-                              model=model,
-                              opt=opt,
-                              device=args.device)
+                                valid_loader=valid_loader,
+                                model=model,
+                                opt=opt,
+                                device=args.device)
 
     else:
-         print("Modeltype not available! Check spelling.")
+        print("Modeltype not available! Check spelling.")
 
 
 if __name__ == "__main__":
@@ -134,7 +147,7 @@ if __name__ == "__main__":
     # train configs
     parser.add_argument("--modeltype", type=str, default="srflow",
                         help="Specify modeltype you would like to train [srflow, cdiff, stflow].")
-    parser.add_argument("--model_path", type=str, default="runs/",
+    parser.add_argument("--model_path", type=str, default="scratch/runs/",
                         help="Directory where models are saved.")
     parser.add_argument("--modelname", type=str, default=None,
                         help="Sepcify modelname to be tested.")
